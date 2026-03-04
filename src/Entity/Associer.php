@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[ORM\Table(name: 'associer')]
+class Associer
+{
+    #[ORM\Id]
+    #[ORM\ManyToOne(targetEntity: Jour::class, inversedBy: 'associers')]
+    #[ORM\JoinColumn(name: 'id_jour', referencedColumnName: 'id_jour', nullable: false)]
+    private ?Jour $jour = null;
+
+    #[ORM\Id]
+    #[ORM\ManyToOne(targetEntity: Horaire::class, inversedBy: 'associers')]
+    #[ORM\JoinColumn(name: 'id_horaire', referencedColumnName: 'id_horaire', nullable: false)]
+    private ?Horaire $horaire = null;
+
+    public function getJour(): ?Jour
+    {
+        return $this->jour;
+    }
+
+    public function setJour(?Jour $jour): static
+    {
+        $this->jour = $jour;
+
+        return $this;
+    }
+
+    public function getHoraire(): ?Horaire
+    {
+        return $this->horaire;
+    }
+
+    public function setHoraire(?Horaire $horaire): static
+    {
+        $this->horaire = $horaire;
+
+        return $this;
+    }
+
+}
