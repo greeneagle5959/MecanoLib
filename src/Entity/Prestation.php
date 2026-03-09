@@ -27,26 +27,16 @@ class Prestation
     #[ORM\Column(name: 'categorie_prestation', type: 'string', length: 30, nullable: false)]
     private string $categoriePrestation;
 
-    #[ORM\Column(name: 'prerequis', type: 'text', nullable: false)]
-    private string $prerequis;
-
-    #[ORM\Column(name: 'ressource_requise', type: 'text', nullable: false)]
-    private string $ressourceRequise;
-
-    #[ORM\ManyToOne(targetEntity: Garage::class, inversedBy: 'prestations')]
-    #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
-    private ?Garage $garage = null;
-
     #[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'prestations')]
     #[ORM\JoinColumn(name: 'id_categorie', referencedColumnName: 'id_categorie', nullable: false)]
     private ?Categorie $categorie = null;
 
-    #[ORM\OneToMany(mappedBy: 'prestation', targetEntity: Lier::class)]
-    private Collection $liers;
+    #[ORM\ManyToMany(targetEntity: Garage::class, mappedBy: 'prestations')]
+    private Collection $garages;
 
     public function __construct()
     {
-        $this->liers = new ArrayCollection();
+        $this->garages = new ArrayCollection();
     }
 
     public function getIdPrestation(): int
@@ -102,42 +92,6 @@ class Prestation
         return $this;
     }
 
-    public function getPrerequis(): string
-    {
-        return $this->prerequis;
-    }
-
-    public function setPrerequis(string $prerequis): static
-    {
-        $this->prerequis = $prerequis;
-
-        return $this;
-    }
-
-    public function getRessourceRequise(): string
-    {
-        return $this->ressourceRequise;
-    }
-
-    public function setRessourceRequise(string $ressourceRequise): static
-    {
-        $this->ressourceRequise = $ressourceRequise;
-
-        return $this;
-    }
-
-    public function getGarage(): ?Garage
-    {
-        return $this->garage;
-    }
-
-    public function setGarage(?Garage $garage): static
-    {
-        $this->garage = $garage;
-
-        return $this;
-    }
-
     public function getCategorie(): ?Categorie
     {
         return $this->categorie;
@@ -150,29 +104,24 @@ class Prestation
         return $this;
     }
 
-/** @return Collection<int, Lier> */
-    public function getLiers(): Collection
+    /** @return Collection<int, Garage> */
+    public function getGarages(): Collection
     {
-        return $this->liers;
+        return $this->garages;
     }
 
-    public function addLier(Lier $lier): static
+    public function addGarage(Garage $garage): static
     {
-        if (!$this->liers->contains($lier)) {
-            $this->liers->add($lier);
-            $lier->setPrestation($this);
+        if (!$this->garages->contains($garage)) {
+            $this->garages->add($garage);
         }
 
         return $this;
     }
 
-    public function removeLier(Lier $lier): static
+    public function removeGarage(Garage $garage): static
     {
-        if ($this->liers->removeElement($lier)) {
-            if ($lier->getPrestation() === $this) {
-                $lier->setPrestation(null);
-            }
-        }
+        $this->garages->removeElement($garage);
 
         return $this;
     }

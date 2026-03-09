@@ -39,9 +39,6 @@ class RendezVous
     #[ORM\JoinColumn(name: 'id_status_rdv', referencedColumnName: 'id_status_rdv', nullable: false)]
     private ?StatusRdv $statusRdv = null;
 
-    #[ORM\OneToMany(mappedBy: 'rdv', targetEntity: Lier::class)]
-    private Collection $liers;
-
     #[ORM\OneToMany(mappedBy: 'rdv', targetEntity: Files::class)]
     private Collection $filesList;
 
@@ -53,7 +50,6 @@ class RendezVous
 
     public function __construct()
     {
-        $this->liers = new ArrayCollection();
         $this->filesList = new ArrayCollection();
         $this->notificationsList = new ArrayCollection();
         $this->historiques = new ArrayCollection();
@@ -144,33 +140,6 @@ class RendezVous
     public function setStatusRdv(?StatusRdv $statusRdv): static
     {
         $this->statusRdv = $statusRdv;
-
-        return $this;
-    }
-
-/** @return Collection<int, Lier> */
-    public function getLiers(): Collection
-    {
-        return $this->liers;
-    }
-
-    public function addLier(Lier $lier): static
-    {
-        if (!$this->liers->contains($lier)) {
-            $this->liers->add($lier);
-            $lier->setRdv($this);
-        }
-
-        return $this;
-    }
-
-    public function removeLier(Lier $lier): static
-    {
-        if ($this->liers->removeElement($lier)) {
-            if ($lier->getRdv() === $this) {
-                $lier->setRdv(null);
-            }
-        }
 
         return $this;
     }

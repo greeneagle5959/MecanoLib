@@ -31,7 +31,7 @@ CREATE TABLE `abonnement` (
   `id_abonnement` int NOT NULL,
   `lib_abonnement` varchar(255) NOT NULL,
   `tarif_abonnement` decimal(19,4) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -42,7 +42,7 @@ CREATE TABLE `abonnement` (
 CREATE TABLE `associer` (
   `id_jour` int NOT NULL,
   `id_horaire` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -57,7 +57,7 @@ CREATE TABLE `avis` (
   `date_publication` datetime NOT NULL,
   `id_garage` int NOT NULL,
   `id_client` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -68,7 +68,7 @@ CREATE TABLE `avis` (
 CREATE TABLE `categorie` (
   `id_categorie` int NOT NULL,
   `nom_categorie` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -86,7 +86,7 @@ CREATE TABLE `client` (
   `consentement_client` tinyint NOT NULL,
   `date_inscription` datetime NOT NULL,
   `id_utilisateur` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -100,7 +100,7 @@ CREATE TABLE `doctrine_migration_versions` (
   `version` varchar(191) NOT NULL,
   `executed_at` datetime DEFAULT NULL,
   `execution_time` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -115,7 +115,7 @@ CREATE TABLE `files` (
   `img` varchar(255) NOT NULL,
   `commentaire` longtext NOT NULL,
   `id_rdv` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -136,7 +136,7 @@ CREATE TABLE `garage` (
   `img_logo` varchar(255) DEFAULT NULL,
   `id_utilisateur` int NOT NULL,
   `id_ville` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -151,7 +151,7 @@ CREATE TABLE `historique` (
   `date_intervention` date NOT NULL,
   `compte_rendu` longtext NOT NULL,
   `id_rdv` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -166,7 +166,7 @@ CREATE TABLE `horaire` (
   `hre_ouvre_soir` time NOT NULL,
   `hre_ferme_soir` time NOT NULL,
   `id_garage` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -177,7 +177,7 @@ CREATE TABLE `horaire` (
 CREATE TABLE `jour` (
   `id_jour` int NOT NULL,
   `lib_jour` varchar(15) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -188,7 +188,7 @@ CREATE TABLE `jour` (
 CREATE TABLE `lier` (
   `id_prestation` int NOT NULL,
   `id_rdv` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -199,7 +199,7 @@ CREATE TABLE `lier` (
 CREATE TABLE `marque` (
   `id_marque` int NOT NULL,
   `nom_marque` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -217,7 +217,7 @@ CREATE TABLE `messenger_messages` (
   `created_at` datetime NOT NULL,
   `available_at` datetime NOT NULL,
   `delivered_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -229,7 +229,7 @@ CREATE TABLE `modele` (
   `id_modele` int NOT NULL,
   `nom_modele` varchar(50) NOT NULL,
   `id_marque` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -245,7 +245,7 @@ CREATE TABLE `notifications` (
   `date_envoi` datetime NOT NULL,
   `id_status_notif` int NOT NULL,
   `id_rdv` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -259,7 +259,7 @@ CREATE TABLE `prestation` (
   `description_prestation` longtext NOT NULL,
   `duree_prestation` varchar(10) NOT NULL,
   `id_categorie` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -272,7 +272,7 @@ CREATE TABLE `prestation` (
 CREATE TABLE `proposer` (
   `id_garage` int NOT NULL,
   `id_prestation` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -291,7 +291,7 @@ CREATE TABLE `rendez_vous` (
   `id_garage` int NOT NULL,
   `id_vehicule` int NOT NULL,
   `id_status_rdv` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -302,7 +302,7 @@ CREATE TABLE `rendez_vous` (
 CREATE TABLE `reseau_sociaux` (
   `id_reseau` int NOT NULL,
   `nom_reseaux` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -313,7 +313,7 @@ CREATE TABLE `reseau_sociaux` (
 CREATE TABLE `role` (
   `id_role` int NOT NULL,
   `nom_role` varchar(30) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -331,7 +331,7 @@ CREATE TABLE `souscription` (
   `status` tinyint NOT NULL,
   `id_garage` int NOT NULL,
   `id_abonnement` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -342,7 +342,7 @@ CREATE TABLE `souscription` (
 CREATE TABLE `status_notif` (
   `id_status_notif` int NOT NULL,
   `lib_status_notif` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -353,7 +353,7 @@ CREATE TABLE `status_notif` (
 CREATE TABLE `status_rdv` (
   `id_status_rdv` int NOT NULL,
   `lib_status_rdv` varchar(50) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -368,7 +368,7 @@ CREATE TABLE `utilisateur` (
   `auth_2fa` varchar(255) DEFAULT NULL,
   `is_2fa` tinyint NOT NULL,
   `id_role` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -384,7 +384,7 @@ CREATE TABLE `valeur` (
   `qrcode` varchar(255) DEFAULT NULL,
   `id_garage` int NOT NULL,
   `id_reseau` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -398,7 +398,7 @@ CREATE TABLE `vehicule` (
   `annee_vehicule` varchar(4) NOT NULL,
   `id_client` int NOT NULL,
   `id_marque` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -411,7 +411,7 @@ CREATE TABLE `ville` (
   `nom_ville` varchar(30) NOT NULL,
   `code_postal` varchar(10) NOT NULL,
   `code_inssee` varchar(10) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 
@@ -884,7 +884,5 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
-
 
 
