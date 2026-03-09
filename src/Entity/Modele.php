@@ -2,8 +2,6 @@
 
 namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -12,21 +10,17 @@ class Modele
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_modele', type: 'integer', nullable: false)]
-    private int $idModele;
+    #[ORM\Column(name: 'id_modele', type: 'integer')]
+    private ?int $idModele = null;
 
-    #[ORM\Column(name: 'nom_modele', type: 'string', length: 50, nullable: false)]
+    #[ORM\Column(name: 'nom_modele', type: 'string', length: 50)]
     private string $nomModele;
 
-    #[ORM\OneToMany(mappedBy: 'modele', targetEntity: Marque::class)]
-    private Collection $marques;
+    #[ORM\ManyToOne(targetEntity: Marque::class, inversedBy: 'modeles')]
+    #[ORM\JoinColumn(name: 'id_marque', referencedColumnName: 'id_marque', nullable: false)]
+    private ?Marque $marque = null;
 
-    public function __construct()
-    {
-        $this->marques = new ArrayCollection();
-    }
-
-    public function getIdModele(): int
+    public function getIdModele(): ?int
     {
         return $this->idModele;
     }
@@ -36,38 +30,20 @@ class Modele
         return $this->nomModele;
     }
 
-    public function setNomModele(string $nomModele): static
+    public function setNomModele(string $nomModele): self
     {
         $this->nomModele = $nomModele;
-
         return $this;
     }
 
-/** @return Collection<int, Marque> */
-    public function getMarques(): Collection
+    public function getMarque(): ?Marque
     {
-        return $this->marques;
+        return $this->marque;
     }
 
-    public function addMarque(Marque $marque): static
+    public function setMarque(?Marque $marque): self
     {
-        if (!$this->marques->contains($marque)) {
-            $this->marques->add($marque);
-            $marque->setModele($this);
-        }
-
+        $this->marque = $marque;
         return $this;
     }
-
-    public function removeMarque(Marque $marque): static
-    {
-        if ($this->marques->removeElement($marque)) {
-            if ($marque->getModele() === $this) {
-                $marque->setModele(null);
-            }
-        }
-
-        return $this;
-    }
-
 }

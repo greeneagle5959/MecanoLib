@@ -43,7 +43,7 @@ class ReseauSociaux
         return $this;
     }
 
-/** @return Collection<int, Valeur> */
+
     public function getValeurs(): Collection
     {
         return $this->valeurs;

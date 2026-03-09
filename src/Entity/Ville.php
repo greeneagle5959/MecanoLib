@@ -73,7 +73,7 @@ class Ville
         return $this;
     }
 
-/** @return Collection<int, Garage> */
+
     public function getGarages(): Collection
     {
         return $this->garages;

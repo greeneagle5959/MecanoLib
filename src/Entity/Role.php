@@ -43,7 +43,7 @@ class Role
         return $this;
     }
 
-/** @return Collection<int, Utilisateur> */
+
     public function getUtilisateurs(): Collection
     {
         return $this->utilisateurs;

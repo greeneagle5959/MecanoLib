@@ -90,7 +90,7 @@ class Vehicule
         return $this;
     }
 
-/** @return Collection<int, RendezVous> */
+
     public function getRendezVousList(): Collection
     {
         return $this->rendezVousList;

@@ -148,7 +148,7 @@ class RendezVous
         return $this;
     }
 
-/** @return Collection<int, Lier> */
+
     public function getLiers(): Collection
     {
         return $this->liers;
@@ -175,7 +175,7 @@ class RendezVous
         return $this;
     }
 
-/** @return Collection<int, Files> */
+
     public function getFilesList(): Collection
     {
         return $this->filesList;
@@ -202,7 +202,7 @@ class RendezVous
         return $this;
     }
 
-/** @return Collection<int, Notifications> */
+
     public function getNotificationsList(): Collection
     {
         return $this->notificationsList;
@@ -229,7 +229,7 @@ class RendezVous
         return $this;
     }
 
-/** @return Collection<int, Historique> */
+
     public function getHistoriques(): Collection
     {
         return $this->historiques;

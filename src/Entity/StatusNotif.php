@@ -43,7 +43,7 @@ class StatusNotif
         return $this;
     }
 
-/** @return Collection<int, Notifications> */
+
     public function getNotificationsList(): Collection
     {
         return $this->notificationsList;

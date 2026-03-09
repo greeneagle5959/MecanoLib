@@ -12,25 +12,21 @@ class Marque
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_marque', type: 'integer', nullable: false)]
-    private int $idMarque;
+    #[ORM\Column(name: 'id_marque', type: 'integer')]
+    private ?int $idMarque = null;
 
-    #[ORM\Column(name: 'nom_marque', type: 'string', length: 50, nullable: false)]
+    #[ORM\Column(name: 'nom_marque', type: 'string', length: 50)]
     private string $nomMarque;
 
-    #[ORM\ManyToOne(targetEntity: Modele::class, inversedBy: 'marques')]
-    #[ORM\JoinColumn(name: 'id_modele', referencedColumnName: 'id_modele', nullable: false)]
-    private ?Modele $modele = null;
-
-    #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Vehicule::class)]
-    private Collection $vehicules;
+    #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Modele::class)]
+    private Collection $modeles;
 
     public function __construct()
     {
-        $this->vehicules = new ArrayCollection();
+        $this->modeles = new ArrayCollection();
     }
 
-    public function getIdMarque(): int
+    public function getIdMarque(): ?int
     {
         return $this->idMarque;
     }
@@ -40,50 +36,35 @@ class Marque
         return $this->nomMarque;
     }
 
-    public function setNomMarque(string $nomMarque): static
+    public function setNomMarque(string $nomMarque): self
     {
         $this->nomMarque = $nomMarque;
-
         return $this;
     }
 
-    public function getModele(): ?Modele
+    public function getModeles(): Collection
     {
-        return $this->modele;
+        return $this->modeles;
     }
 
-    public function setModele(?Modele $modele): static
+    public function addModele(Modele $modele): self
     {
-        $this->modele = $modele;
-
-        return $this;
-    }
-
-/** @return Collection<int, Vehicule> */
-    public function getVehicules(): Collection
-    {
-        return $this->vehicules;
-    }
-
-    public function addVehicule(Vehicule $vehicule): static
-    {
-        if (!$this->vehicules->contains($vehicule)) {
-            $this->vehicules->add($vehicule);
-            $vehicule->setMarque($this);
+        if (!$this->modeles->contains($modele)) {
+            $this->modeles[] = $modele;
+            $modele->setMarque($this);
         }
 
         return $this;
     }
 
-    public function removeVehicule(Vehicule $vehicule): static
+    public function removeModele(Modele $modele): self
     {
-        if ($this->vehicules->removeElement($vehicule)) {
-            if ($vehicule->getMarque() === $this) {
-                $vehicule->setMarque(null);
+        if ($this->modeles->removeElement($modele)) {
+            if ($modele->getMarque() === $this) {
+                $modele->setMarque(null);
             }
         }
 
         return $this;
     }
-
 }
