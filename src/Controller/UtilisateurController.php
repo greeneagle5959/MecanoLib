@@ -7,6 +7,7 @@ use App\Entity\Garage;
 use App\Entity\Role;
 use App\Entity\Utilisateur;
 use App\Entity\Ville;
+use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,7 +17,6 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class UtilisateurController extends AbstractController
 {
-
 // la methode pour inscrire un utilisateur (client)
     #[Route('/api/v1/users/inscrire_client', name: 'app_users_inscrire_client', methods: ['POST'])]
     public function registerClient( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher ): JsonResponse 
@@ -224,7 +224,7 @@ final class UtilisateurController extends AbstractController
     #[Route('/api/v1/users/connecter', name: 'app_user_connecter', methods: ['GET'])]
     public function connecter(): JsonResponse
     {
-        $user = $this->getUser(); // récupère l'utilisateur via JWT
+        $user = $this->getUser(); // récupère l'utilisateur 
 
         if (!$user) {
             return $this->json(['erreur' => 'Utilisateur non connecté'], 401);
@@ -242,5 +242,31 @@ final class UtilisateurController extends AbstractController
             
         ]);
     }
+    //recuperer toutes les utilisateurs (client/Admin/superAdmin)
+    #[Route('/api/v1/users/get_utilisateur', name: 'app_get_utilisateur', methods: ['POST'])]
+    public function getAllUser(Request $request, UtilisateurRepository $repo): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
 
+        $role = $data['role'] ?? "";
+        $users = $repo->findAll();
+
+        $filteredUsers = array_filter($users, function ($user) use ($role) {
+            return $user->getRole() && $user->getRole()->getNomRole() === $role;
+             
+        });
+
+        $result = [];
+
+        foreach ($filteredUsers as $user) {
+            $result[] = [
+                'id_utilisateur' => $user->getIdUtilisateur(),
+                'email' => $user->getEmailUtilisateur(),
+                'role' => $user->getRole()?->getNomRole()
+            ];
+        }
+
+        return $this->json($result);
+    }
+   
 }
