@@ -7,6 +7,7 @@ use App\Entity\Role;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Scheb\TwoFactorBundle\Model\Google\TwoFactorInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -15,7 +16,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'utilisateur')]
-class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
+class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface ,TwoFactorInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -175,5 +176,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     public function eraseCredentials(): void { }
+
+    public function isGoogleAuthenticatorEnabled(): bool
+    {
+        return $this->is2fa;
+    }
+
+    public function getGoogleAuthenticatorSecret(): ?string
+    {
+        return $this->auth2fa;
+    }
+    public function getGoogleAuthenticatorUsername(): string
+    {
+        return $this->emailUtilisateur;
+    }
 
 }
