@@ -192,21 +192,18 @@ class PrestationController extends AbstractController
         $entityManager->remove($prestation);
         $entityManager->flush();
 
-        return $this->json(['message' => 'La prestation a ete supprimee avec succes.']);
+        return $this->json(['message' => 'La prestation a ete supprime avec succes.']);
     }
     #[Route('/api/v1/garage/{idGarage}/add_prestations', name: 'api_garage_add_prestations', methods: ['POST'])]
     public function addPrestationsGarage( int $idGarage, Request $request,  EntityManagerInterface $manager   ): JsonResponse 
        
-       
-      
- {
-
+    {
         $garage = $manager->getRepository(Garage::class)->find($idGarage);
 
         if (!$garage) {
             return $this->json([
                 'message' => 'Garage introuvable'
-            ], JsonResponse::HTTP_NOT_FOUND);
+            ]);
         }
 
         $data = json_decode($request->getContent(), true);
@@ -214,11 +211,9 @@ class PrestationController extends AbstractController
         if (!isset($data['prestations']) || !is_array($data['prestations'])) {
             return $this->json([
                 'message' => 'Liste des prestations requise'
-            ], JsonResponse::HTTP_BAD_REQUEST);
+            ]);
         }
-
         $proposerRepo = $manager->getRepository(Proposer::class);
-
         foreach ($data['prestations'] as $item) {
 
             if (!isset($item['id']) || !isset($item['prix'])) {
@@ -257,11 +252,10 @@ class PrestationController extends AbstractController
             'message' => 'Prestations mises à jour avec succès'
         ]);
     }
+    // methode pour supprimer une prestation dans un garage
     #[Route('/api/v1/garage/{idGarage}/delete_prestation/{idPrestation}', name: 'api_garage_delete_prestation', methods: ['DELETE'])]
     public function deletePrestationGarage(  int $idGarage,int $idPrestation,EntityManagerInterface $manager ): JsonResponse
-      
-        
-        
+       
     {
 
         $garage = $manager->getRepository(Garage::class)->find($idGarage);
@@ -270,7 +264,7 @@ class PrestationController extends AbstractController
         if (!$garage || !$prestation) {
             return $this->json([
                 'message' => 'Garage ou prestation introuvable'
-            ], JsonResponse::HTTP_NOT_FOUND);
+            ]);
         }
 
         $proposer = $manager->getRepository(Proposer::class)->findOneBy([
@@ -281,7 +275,7 @@ class PrestationController extends AbstractController
         if (!$proposer) {
             return $this->json([
                 'message' => 'Cette prestation n\'existe pas pour ce garage'
-            ], JsonResponse::HTTP_NOT_FOUND);
+            ]);
         }
 
         $manager->remove($proposer);
