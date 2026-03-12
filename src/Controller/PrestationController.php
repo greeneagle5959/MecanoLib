@@ -185,7 +185,7 @@ class PrestationController extends AbstractController
             'message' => 'La prestation a ete modifiee avec succes.',
         ]);
     }
-
+// supprimer une prestation
     #[Route('/api/v1/delete_prestation/{id}', name: 'app_prestation_delete', methods: ['DELETE'], requirements: ['id' => '\\d+'])]
     public function delete(Prestation $prestation, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -194,6 +194,7 @@ class PrestationController extends AbstractController
 
         return $this->json(['message' => 'La prestation a ete supprime avec succes.']);
     }
+    // methode pour que le garage rajoute ca voiture 
     #[Route('/api/v1/garage/{idGarage}/add_prestations', name: 'api_garage_add_prestations', methods: ['POST'])]
     public function addPrestationsGarage( int $idGarage, Request $request,  EntityManagerInterface $manager   ): JsonResponse 
        

@@ -29,6 +29,10 @@ class Vehicule
     #[ORM\JoinColumn(name: 'id_marque', referencedColumnName: 'id_marque', nullable: false)]
     private ?Marque $marque = null;
 
+    #[ORM\ManyToOne(targetEntity: Modele::class)]
+    #[ORM\JoinColumn(name: 'id_modele', referencedColumnName: 'id_modele', nullable: false)]
+    private ?Modele $modele = null;
+
     #[ORM\OneToMany(mappedBy: 'vehicule', targetEntity: RendezVous::class)]
     private Collection $rendezVousList;
 
@@ -90,6 +94,16 @@ class Vehicule
         return $this;
     }
 
+    public function getModele(): ?Modele
+    {
+        return $this->modele;
+    }
+
+    public function setModele(?Modele $modele): self
+    {
+        $this->modele = $modele;
+        return $this;
+    }
 
     public function getRendezVousList(): Collection
     {

@@ -50,7 +50,6 @@ final class UtilisateurController extends AbstractController
                 "erreur" => "Cet email est déjà utilisé"
             ], 400);
         }
-
         // récupérer le rôle
         $role = $manager->getRepository(Role::class)
             ->findOneBy(['nomRole' => 'ROLE_USER']);
@@ -314,11 +313,8 @@ final class UtilisateurController extends AbstractController
         return $this->json($result);
     }
     #[Route('/api/v1/users/activer_2fa', name: 'activer_2fa', methods: ['POST'])]
-    public function activer2FA(
-        Request $request,
-        EntityManagerInterface $manager,
-        GoogleAuthenticatorInterface $googleAuthenticator
-    ): JsonResponse {
+    public function activer2FA(Request $request, EntityManagerInterface $manager, GoogleAuthenticatorInterface $googleAuthenticator): JsonResponse 
+    {
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
 
@@ -374,10 +370,8 @@ final class UtilisateurController extends AbstractController
         ]);
     }
     #[Route('/api/v1/users/verify_2fa', name: 'verify_2fa', methods: ['POST'])]
-    public function verify2FA( Request $request, EntityManagerInterface $manager ): JsonResponse
-       
+    public function verify2FA( Request $request, EntityManagerInterface $manager ): JsonResponse  
     {
-
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
         $code = $data['code'] ?? null;
@@ -387,7 +381,6 @@ final class UtilisateurController extends AbstractController
                 'erreur' => 'Email et code requis'
             ], 400);
         }
-
         $user = $manager->getRepository(Utilisateur::class)
             ->findOneBy(['emailUtilisateur' => $email]);
 
@@ -404,7 +397,6 @@ final class UtilisateurController extends AbstractController
                 'erreur' => '2FA non configuré'
             ], 400);
         }
-
         $g = new GoogleAuthenticator();
 
         if (!$g->checkCode($secret, $code)) {
@@ -412,7 +404,6 @@ final class UtilisateurController extends AbstractController
                 'erreur' => 'Code 2FA invalide'
             ], 403);
         }
-
         // Activation définitive du 2FA
         $user->setIs2fa(true);
 
