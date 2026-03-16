@@ -3,11 +3,11 @@
 namespace App\Controller;
 
 
+use App\Entity\Modele;
 use App\Entity\Vehicule;
 use App\Repository\ClientRepository;
 use App\Repository\MarqueRepository;
 use App\Repository\ModeleRepository;
-use App\Repository\VehiculeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,7 +38,6 @@ final class VehiculeController extends AbstractController
     #[Route('/api/v1/choisir_modele/{id}', name: 'app_choisir_modele',methods: ['GET'])]
     public function getModeles(int $id, ModeleRepository $repo): JsonResponse
     {
-
         $modeles = $repo->findBy(['marque' => $id]);
 
         $data = [];
@@ -54,26 +53,22 @@ final class VehiculeController extends AbstractController
     }
 // la methode pour que le client peut ajouter ces voiture 
     #[Route('/api/v1/client/add_vehicule', name: 'app_add_vehicule', methods: ['POST'])]
-    public function addVehicule(
-        Request $request,
-        EntityManagerInterface $manager,
-        ClientRepository $clientRepo,
-        MarqueRepository $marqueRepo
-    ): JsonResponse {
-
+    public function addVehicule( Request $request,EntityManagerInterface $manager,ClientRepository $clientRepo,MarqueRepository $marqueRepo ): JsonResponse
+    {
         $data = json_decode($request->getContent(), true);
 
         $immatriculation = $data['immatriculation'] ?? null;
         $annee = $data['annee'] ?? null;
         $clientId = $data['id_client'] ?? null;
         $marqueId = $data['id_marque'] ?? null;
-        $modeleNom = $data['modele_nom'] ?? null;
+        $modeleId = $data['id_modele'] ?? null;
 
-        if (!$immatriculation || !$annee || !$clientId || !$marqueId || !$modeleNom) {
+        if (!$immatriculation || !$annee || !$clientId || !$marqueId || !$modeleId) {
             return new JsonResponse([
                 "message" => "Données manquantes"
             ], 400);
         }
+
         // vérifier immatriculation
         $immatriculationExiste = $manager->getRepository(Vehicule::class)
             ->findOneBy(['imatriculationVehicule' => $immatriculation]);
@@ -86,27 +81,12 @@ final class VehiculeController extends AbstractController
 
         $client = $clientRepo->find($clientId);
         $marque = $marqueRepo->find($marqueId);
+        $modele = $manager->getRepository(Modele::class)->find($modeleId);
 
-        if (!$client || !$marque) {
+        if (!$client || !$marque || !$modele) {
             return new JsonResponse([
-                "message" => "Client ou marque introuvable"
+                "message" => "Client, marque ou modèle introuvable"
             ], 404);
-        }
-
-        // Vérifier que le modèle appartient à la marque
-        $modeleTrouve = null;
-
-        foreach ($marque->getModeles() as $modele) {
-            if ($modele->getNomModele() === $modeleNom) {
-                $modeleTrouve = $modele;
-                break;
-            }
-        }
-
-        if (!$modeleTrouve) {
-            return new JsonResponse([
-                "message" => "Ce modèle n'appartient pas à cette marque"
-            ], 400);
         }
 
         $vehicule = new Vehicule();
@@ -114,7 +94,7 @@ final class VehiculeController extends AbstractController
         $vehicule->setAnneeVehicule($annee);
         $vehicule->setClient($client);
         $vehicule->setMarque($marque);
-        $vehicule->setModeleVehicule($modeleTrouve->getNomModele());
+        $vehicule->setModele($modele);
 
         $manager->persist($vehicule);
         $manager->flush();
@@ -171,9 +151,9 @@ final class VehiculeController extends AbstractController
 
         return new JsonResponse($data);
     }
+    //modifier le vehicule 
     #[Route('/api/v1/client/update_vehicule/{id}', name: 'app_update_vehicule', methods: ['PATCH'])]
-    public function updateVehicule( int $id,Request $request,EntityManagerInterface $manager, MarqueRepository $marqueRepo ): JsonResponse 
-       
+    public function updateVehicule( int $id, Request $request, EntityManagerInterface $manager, MarqueRepository $marqueRepo ): JsonResponse  
     {
         $vehicule = $manager->getRepository(Vehicule::class)->find($id);
 
@@ -185,43 +165,46 @@ final class VehiculeController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        // Modifier immatriculation
         if (isset($data['immatriculation'])) {
             $vehicule->setImatriculationVehicule($data['immatriculation']);
         }
 
-        // Modifier année
         if (isset($data['annee'])) {
             $vehicule->setAnneeVehicule($data['annee']);
         }
 
-        // Modifier marque et vérifier modèle
         if (isset($data['id_marque'])) {
             $marque = $marqueRepo->find($data['id_marque']);
-            if ($marque) {
-                $vehicule->setMarque($marque);
 
-                // Vérifier le modèle choisi
-                if (isset($data['modele_nom'])) {
-                    $modeles = $marque->getModeles();
-                    $modeleTrouve = null;
-                    foreach ($modeles as $m) {
-                        if ($m->getNomModele() === $data['modele_nom']) {
-                            $modeleTrouve = $m;
-                            break;
-                        }
-                    }
-                   
-                    // Stocker le nom du modèle dans un champ texte
-                    $vehicule->setModeleVehicule($modeleTrouve->getNomModele());
-                }
+            if (!$marque) {
+                return new JsonResponse([
+                    "message" => "Marque introuvable"
+                ], 404);
             }
+
+            $vehicule->setMarque($marque);
         }
+
+        if (isset($data['id_modele'])) {
+
+            $modele = $manager->getRepository(Modele::class)
+                ->find($data['id_modele']);
+
+            if (!$modele) {
+                return new JsonResponse([
+                    "message" => "Modele introuvable"
+                ], 404);
+            }
+
+            $vehicule->setModele($modele);
+        }
+
         $manager->flush();
+
         return new JsonResponse([
             "message" => "Véhicule modifié avec succès"
         ]);
     }
-
+    
     
 }

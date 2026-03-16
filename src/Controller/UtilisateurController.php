@@ -312,6 +312,7 @@ final class UtilisateurController extends AbstractController
 
         return $this->json($result);
     }
+    // la methode pour activer l'authentification 2FA
     #[Route('/api/v1/users/activer_2fa', name: 'activer_2fa', methods: ['POST'])]
     public function activer2FA(Request $request, EntityManagerInterface $manager, GoogleAuthenticatorInterface $googleAuthenticator): JsonResponse 
     {
@@ -369,6 +370,7 @@ final class UtilisateurController extends AbstractController
             'message' => '2FA désactivé avec succès'
         ]);
     }
+    // la methode pour verifier le code secret et activer la 2fa a mettre dans le dashboard (client/garage/superAdmin)
     #[Route('/api/v1/users/verify_2fa', name: 'verify_2fa', methods: ['POST'])]
     public function verify2FA( Request $request, EntityManagerInterface $manager ): JsonResponse  
     {
