@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Entity\Utilisateur;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -42,16 +43,16 @@ class Garage
     #[ORM\Column(name: 'img_logo', type: 'string', length: 255, nullable: true)]
     private ?string $imgLogo = null;
 
-    #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'garages')]
-    #[ORM\JoinColumn(name: 'id_utilisateur', referencedColumnName: 'id_utilisateur', nullable: false)]
-    private ?Utilisateur $utilisateur = null;
-
     #[ORM\ManyToOne(targetEntity: Ville::class, inversedBy: 'garages')]
     #[ORM\JoinColumn(name: 'id_ville', referencedColumnName: 'id_ville', nullable: false)]
     private ?Ville $ville = null;
 
     #[ORM\Column(name: 'is_valide', type: 'boolean', options: ['default' => false])]
     private bool $isValide = false;
+
+    #[ORM\ManyToOne(targetEntity: Utilisateur::class)]
+    #[ORM\JoinColumn(name: "id_utilisateur", referencedColumnName: "id_utilisateur", onDelete: "CASCADE")]
+    private ?Utilisateur $utilisateur = null;
 
     #[ORM\ManyToMany(targetEntity: Prestation::class, inversedBy: 'garages')]
     #[ORM\JoinTable(name: 'proposer')]

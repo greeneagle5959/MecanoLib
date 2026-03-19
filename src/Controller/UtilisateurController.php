@@ -67,7 +67,6 @@ final class UtilisateurController extends AbstractController
             $utilisateur,
             $mdp
         );
-
         $utilisateur->setMdpUtilisateur($hashedPassword);
 
         $utilisateur->setRole($role);
@@ -93,11 +92,9 @@ final class UtilisateurController extends AbstractController
     }
 
     // methode pour inscrire un garage 
-   #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
-    public function registerGarage( Request $request,  EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher): JsonResponse
-       
+    #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
+    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
-        
         $data = json_decode($request->getContent(), true);
 
         $nomGarage = $data['nom_garage'] ?? '';
@@ -106,24 +103,36 @@ final class UtilisateurController extends AbstractController
         $adresse = $data['adresse'] ?? '';
         $siret = $data['siret'] ?? '';
         $tva = $data['tva'] ?? '';
-        $villeId = $data['id_ville'] ?? null;
         $mdp = $data['mdp'] ?? '';
+        $villeNom = $data['ville'] ?? '';
+        $villeCode = $data['code_insee'] ?? '';
+        $cp = $data['cp'] ?? '';
 
-        if (!$nomGarage || !$email || !$telephone || !$adresse || !$siret || !$tva || !$villeId || !$mdp) {
+        if (!$nomGarage || !$email || !$telephone || !$adresse || !$siret || !$tva || !$mdp || !$villeNom || !$villeCode || !$cp) {
             return $this->json(['erreur' => 'Merci de remplir toutes les informations'], 400);
         }
 
-        // Vérifier si l'email existe déjà
-        $emailExiste = $manager->getRepository(Utilisateur::class)
-            ->findOneBy(['emailUtilisateur' => $email]);
-        if ($emailExiste) {
+        if ($manager->getRepository(Utilisateur::class)->findOneBy(['emailUtilisateur' => $email])) {
             return $this->json(['erreur' => 'Cet email est déjà utilisé'], 400);
         }
 
-        // Récupérer le rôle garage
-        $roleGarage = $manager->getRepository(Role::class)
-            ->findOneBy(['nomRole' => 'ROLE_ADMIN']); 
-       
+        if ($manager->getRepository(Garage::class)->findOneBy(['telephoneGarage' => $telephone])) {
+            return $this->json(['erreur' => 'Ce numéro de téléphone est déjà utilisé'], 400);
+        }
+
+        if ($manager->getRepository(Garage::class)->findOneBy(['siret' => $siret])) {
+            return $this->json(['erreur' => 'Ce SIRET est déjà utilisé'], 400);
+        }
+
+         if ($manager->getRepository(Garage::class)->findOneBy(['tva' => $tva])) {
+            return $this->json(['erreur' => 'Ce TVA est déjà utilisé'], 400);
+        }
+
+        $roleGarage = $manager->getRepository(Role::class)->findOneBy(['nomRole' => 'ROLE_ADMIN']);
+        if (!$roleGarage) {
+            return $this->json(['erreur' => 'Rôle garage introuvable'], 400);
+        }
+
         // Créer l'utilisateur du garage
         $utilisateur = new Utilisateur();
         $utilisateur->setEmailUtilisateur($email);
@@ -133,6 +142,18 @@ final class UtilisateurController extends AbstractController
         $hashedPassword = $passwordHasher->hashPassword($utilisateur, $mdp);
         $utilisateur->setMdpUtilisateur($hashedPassword);
         $manager->persist($utilisateur);
+
+        // Récupérer ou créer une ville 
+        $ville = $manager->getRepository(Ville::class)->findOneBy(['codeInssee' => $villeCode]);
+        if (!$ville) {
+            $ville = new Ville();
+            $ville->setNomVille($villeNom);
+            $ville->setCodeInssee($villeCode);
+            $ville->setCodePostal($cp);
+            $manager->persist($ville);
+        } elseif ($ville->getCodePostal() !== $cp) {
+            $ville->setCodePostal($cp);
+        }
 
         // Créer le garage
         $garage = new Garage();
@@ -144,16 +165,10 @@ final class UtilisateurController extends AbstractController
         $garage->setTva($tva);
         $garage->setDateCreation(new \DateTime());
         $garage->setUtilisateur($utilisateur);
-        $garage->setIsValide(false); 
+        $garage->setVille($ville);
+        $garage->setIsValide(false);
         $garage->setImgGarage($data['img_garage'] ?? null);
         $garage->setImgLogo($data['img_logo'] ?? null);
-
-        // Récupérer la ville
-        $ville = $manager->getRepository(Ville::class)->find($villeId);
-        if (!$ville) {
-            return $this->json(['erreur' => 'Ville introuvable'], 400);
-        }
-        $garage->setVille($ville);
 
         $manager->persist($garage);
         $manager->flush();
@@ -162,6 +177,7 @@ final class UtilisateurController extends AbstractController
             'message' => 'Garage ajouté avec succès. En attente de validation par la direction.'
         ], 201);
     }
+
     // ajouter un superadmin 
     #[Route('/api/v1/users/ajouter_superadmin', name: 'ajouter_super_admin', methods: ['POST'])]
     public function ajouterSuperAdmin( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher ): JsonResponse
@@ -268,7 +284,7 @@ final class UtilisateurController extends AbstractController
     #[Route('/api/v1/users/connecter', name: 'app_user_connecter', methods: ['GET'])]
     public function connecter(): JsonResponse
     {
-        $user = $this->getUser(); // récupère l'utilisateur 
+        $user = $this->getUser(); 
 
         if (!$user) {
             return $this->json(['erreur' => 'Utilisateur non connecté'], 401);
