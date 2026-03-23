@@ -1,31 +1,32 @@
-Authentification JWT + 2FA (Google Authenticator)
+# Authentification JWT + 2FA (Google Authenticator)
 
-Description
+# Description
 
 Ce projet implémente un système d’authentification sécurisé basé sur :
 
-    - JWT (JSON Web Token)
-    - 2FA (Google Authenticator)
-    - Gestion des rôles (User, Admin, Super Admin)
-    
-Technologies utilisées
+-  JWT (JSON Web Token)
+-  2FA (Google Authenticator)
+-  Gestion des rôles (User, Admin, Super Admin)
 
-    - Symfony
-    - LexikJWTAuthenticationBundle
-    - SchebTwoFactorBundle
-    - Sonata Google Authenticator
-    
-Installation: 
 
-    Authentification JWT + 2FA Google Authenticator:
 
-    Documentation officielle
+ # Technologies utilisées
 
-   - JWT: https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html
-    
-   - 2FA: https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
+- Symfony
+- LexikJWTAuthenticationBundle
+- SchebTwoFactorBundle
+- Sonata Google Authenticator
 
-Etape 1:
+
+# Documentation officielle
+
+- JWT : https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html  
+- 2FA : https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html  
+
+
+##  Installation
+
+# Etape 1:
 
   Installation JWT (LexikJWTAuthenticationBundle)
   
@@ -38,7 +39,7 @@ Etape 1:
   fichier nolmio
     -
 
-Etape 2:
+# Etape 2:
 
   Installation Bundle Google Authenticator:
   
@@ -48,7 +49,7 @@ Etape 2:
   
       - composer require sonata-project/google-authenticator
       
-Etape 3:
+# Etape 3:
 
   Configuration dans Symfony le fichier security.yaml
   
@@ -72,7 +73,7 @@ Etape 3:
             stateless: true
             provider: users_in_database
             jwt: ~
-Etape 4 
+# Etape 4 
   Configuration 2FA:
   
       Dans le fichier scheb_2fa.yaml:
@@ -89,9 +90,9 @@ Etape 4
                   issuer: le nom de ton dossier ex(MecanoLib)
                   
 
-  Fonctionnement global:
+  # Fonctionnement global:
   
-    Étape 1
+   # Étape 1
         Endpoint dans le controller :
             - POST /api/v1/users/login
 
@@ -111,7 +112,7 @@ Etape 4
                 return $this->json(['erreur' => 'Code 2FA invalide'], 403);
             }
 
-    Exemple de Endpoint 
+   # Exemple de Endpoint 
     // creation dune route pour generer le token
     #[Route('/api/v1/users/login', name: 'app_user_login', methods: ['POST'])]
     public function login( Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher,                GoogleAuthenticatorInterface $googleAuth,JWTTokenManagerInterface $jwtManager ): JsonResponse
@@ -160,27 +161,27 @@ Etape 4
         ]);
     }
 
- Gestion du 2FA : 
+# Gestion du 2FA : 
  
      Activation 2FA :
-         Endpoint: POST /api/v1/users/verify_2fa
+         Endpoint: POST /api/v1/users/activer_2fa
+         Génère un secret et active le 2FA.
          
-         Vérifie le code généré par Google Authenticator: 
-         
+     Vérification 2FA: 
+        Endpoint: POST /api/v1/users/verify_2fa
+        Vérifie le code Google Authenticator.
             $g = new GoogleAuthenticator();
-            if (!$g->checkCode($secret, $code)) {
-                return $this->json([
-                    'erreur' => 'Code 2FA invalide'
-                ], 403);
+            if (!$g->checkCode($user->getAuth2fa(), $authCode)) {
+                return $this->json(['erreur' => 'Code 2FA invalide'], 403);
             }
+     
              
      Désactivation du 2FA:
           Endpoint: POST /api/v1/users/desactiver_2fa
           Supprime le secret et désactive la double authentification
         
 
-
-Sécurité :
+# Sécurité :
 
     - Authentification stateless via JWT
     - Double authentification avec TOTP (Google Authenticator)
