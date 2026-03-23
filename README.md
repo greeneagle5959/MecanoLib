@@ -15,7 +15,9 @@ Technologies utilisées
     
 Installation: 
 
-    Authentification JWT + 2FA Google Authenticator
+    Authentification JWT + 2FA Google Authenticator:
+
+    Lien de la docs symfony:
     
     https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
