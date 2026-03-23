@@ -151,6 +151,15 @@ Etape 4
             'roles' => $user->getRoles(),
         ]);
     }
+
+Sécurité :
+
+    - Authentification stateless via JWT
+    - Double authentification avec TOTP (Google Authenticator)
+    - Protection des routes via firewall Symfony
+
+
+    
   
 
   
