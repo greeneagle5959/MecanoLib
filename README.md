@@ -22,9 +22,11 @@ Installation:
 Etape 1
 
   Installation JWT (LexikJWTAuthenticationBundle)
+  
     - composer require lexik/jwt-authentication-bundle
     
   Génération des clés JWT
+  
     - php bin/console lexik:jwt:generate-keypair
     
   fichier nolmio
