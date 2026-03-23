@@ -19,7 +19,7 @@ Installation:
     
     https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
-Etape 1
+Etape 1:
 
   Installation JWT (LexikJWTAuthenticationBundle)
   
@@ -32,12 +32,18 @@ Etape 1
   fichier nolmio
     -
 
-Etape 2 
-  Installation Bundle Google Authenticator
+Etape 2:
+
+  Installation Bundle Google Authenticator:
+  
       - composer require scheb/two-factor-bundle
-  Librairie Google Authenticator
+      
+  Librairie Google Authenticator:
+  
       - composer require sonata-project/google-authenticator
-Etape 3 
+      
+Etape 3:
+
   Configuration dans Symfony le fichier security.yaml
   
     providers:
