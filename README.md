@@ -1,6 +1,6 @@
 # Authentification JWT + 2FA (Google Authenticator)
 
-# Description
+## Description
 
 Ce projet implémente un système d’authentification sécurisé basé sur :
 
@@ -10,7 +10,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
 
 
 
- # Technologies utilisées
+ ## Technologies utilisées
 
 - Symfony
 - LexikJWTAuthenticationBundle
@@ -18,7 +18,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
 - Sonata Google Authenticator
 
 
-# Documentation officielle
+## Documentation officielle
 
 - JWT : https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html  
 - 2FA : https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html  
@@ -26,7 +26,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
 
 ##  Installation
 
-# Etape 1:
+### Etape 1:
 
   Installation JWT (LexikJWTAuthenticationBundle)
   
@@ -39,7 +39,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
   fichier nolmio
     -
 
-# Etape 2:
+### Etape 2:
 
   Installation Bundle Google Authenticator:
   
@@ -49,7 +49,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
   
       - composer require sonata-project/google-authenticator
       
-# Etape 3:
+### Etape 3:
 
   Configuration dans Symfony le fichier security.yaml
   
@@ -64,7 +64,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         login:
-            pattern: la route dans ton controller ex ( ^/api/v1/users/login)
+            pattern: pattern: ^/api/v1/users/login
             stateless: true 
             provider: users_in_database
            
@@ -73,7 +73,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
             stateless: true
             provider: users_in_database
             jwt: ~
-# Etape 4 
+### Etape 4 
   Configuration 2FA:
   
       Dans le fichier scheb_2fa.yaml:
@@ -90,9 +90,9 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
                   issuer: le nom de ton dossier ex(MecanoLib)
                   
 
-  # Fonctionnement global:
+  ## Fonctionnement global:
   
-   # Étape 1
+   ### Étape 1
         Endpoint dans le controller :
             - POST /api/v1/users/login
 
@@ -112,56 +112,24 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
                 return $this->json(['erreur' => 'Code 2FA invalide'], 403);
             }
 
-   # Exemple de Endpoint 
-    // creation dune route pour generer le token
-    #[Route('/api/v1/users/login', name: 'app_user_login', methods: ['POST'])]
-    public function login( Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher,                GoogleAuthenticatorInterface $googleAuth,JWTTokenManagerInterface $jwtManager ): JsonResponse
-       
-    {
-        $data = json_decode($request->getContent(), true);
-        $email = $data['emailUtilisateur'] ?? '';
-        $mdp = $data['mdpUtilisateur'] ?? '';
-        $authCode = $data['authCode'] ?? null;
-
-        if (!$email || !$mdp) {
-            return $this->json(['erreur' => 'Email et mot de passe obligatoires'], 400);
-        }
-
-        $user = $repo->findOneBy(['emailUtilisateur' => $email]);
-        if (!$user) {
-            return $this->json(['erreur' => 'Utilisateur introuvable'], 404);
-        }
-
-        if (!$hasher->isPasswordValid($user, $mdp)) {
-            return $this->json(['erreur' => 'Email ou Mot de passe incorrect'], 401);
-        }
-
-         // Vérification 2FA
-        if ($user->getIs2fa()) {
-            if (!$authCode) {
-                return $this->json(['erreur' => 'Veuillez fournir le code 2FA'], 403);
-            }
-
-            $g = new GoogleAuthenticator();
+## Exemple de login pour generer le jwt + 2FA
+    Endpoint : POST /api/v1/users/login
+    Cette route permet de :
+        - Vérifier l’email et le mot de passe
+        - Vérifier le code 2FA si activé
+        - Générer un token JWT
+    
+    Génération du token JWT : 
+        $token = $jwtManager->create($user);
+    
+    Vérification 2FA + durée de vie de token :  
+        $g = new GoogleAuthenticator();
             $timestep = 1; 
-
             if (!$g->checkCode($user->getAuth2fa(), $authCode, $timestep)) {
                 return $this->json(['erreur' => 'Code 2FA invalide'], 403);
             }
-        }
-
-        // Générer le JWT
-        $token = $jwtManager->create($user);
-
-        return $this->json([
-            'token' => $token,
-            'userId' => $user->getIdUtilisateur(),
-            'email' => $user->getEmailUtilisateur(),
-            'roles' => $user->getRoles(),
-        ]);
-    }
-
-# Gestion du 2FA : 
+  
+## Gestion du 2FA : 
  
      Activation 2FA :
          Endpoint: POST /api/v1/users/activer_2fa
@@ -170,18 +138,13 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
      Vérification 2FA: 
         Endpoint: POST /api/v1/users/verify_2fa
         Vérifie le code Google Authenticator.
-            $g = new GoogleAuthenticator();
-            if (!$g->checkCode($user->getAuth2fa(), $authCode)) {
-                return $this->json(['erreur' => 'Code 2FA invalide'], 403);
-            }
-     
              
      Désactivation du 2FA:
           Endpoint: POST /api/v1/users/desactiver_2fa
           Supprime le secret et désactive la double authentification
         
 
-# Sécurité :
+## Sécurité :
 
     - Authentification stateless via JWT
     - Double authentification avec TOTP (Google Authenticator)
