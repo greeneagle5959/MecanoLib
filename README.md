@@ -65,7 +65,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         login:
-            pattern: pattern: ^/api/v1/users/login
+            pattern: ^/api/v1/users/login
             stateless: true 
             provider: users_in_database
            
