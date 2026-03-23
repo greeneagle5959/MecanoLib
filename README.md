@@ -160,14 +160,31 @@ Etape 4
         ]);
     }
 
+ Gestion du 2FA : 
+ 
+     Activation 2FA :
+         Endpoint: POST /api/v1/users/verify_2fa
+         
+         Vérifie le code généré par Google Authenticator: 
+         
+            $g = new GoogleAuthenticator();
+            if (!$g->checkCode($secret, $code)) {
+                return $this->json([
+                    'erreur' => 'Code 2FA invalide'
+                ], 403);
+            }
+             
+     Désactivation du 2FA:
+          Endpoint: POST /api/v1/users/desactiver_2fa
+          Supprime le secret et désactive la double authentification
+        
+
+
 Sécurité :
 
     - Authentification stateless via JWT
     - Double authentification avec TOTP (Google Authenticator)
     - Protection des routes via firewall Symfony
-
-
-    
   
 
   
