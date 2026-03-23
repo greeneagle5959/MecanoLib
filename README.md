@@ -73,8 +73,10 @@ Etape 3:
             provider: users_in_database
             jwt: ~
 Etape 4 
-  Configuration 2FA
-      Dans le fichier scheb_2fa.yaml
+  Configuration 2FA:
+  
+      Dans le fichier scheb_2fa.yaml:
+      
           # See the configuration reference at https://symfony.com/bundles/SchebTwoFactorBundle/6.x/configuration.html
           scheb_two_factor:
               security_tokens:
@@ -85,8 +87,10 @@ Etape 4
                   enabled: true
                   server_name: le nom de ton dossier ex(MecanoLib)
                   issuer: le nom de ton dossier ex(MecanoLib)
+                  
 
-  Fonctionnement global
+  Fonctionnement global:
+  
     Étape 1
         Endpoint dans le controller :
             - POST /api/v1/users/login
