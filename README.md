@@ -1,3 +1,5 @@
+Authentification JWT + 2FA (Google Authenticator)
+
 Description
 
 Ce projet implémente un système d’authentification sécurisé basé sur :
@@ -17,13 +19,11 @@ Installation:
 
     Authentification JWT + 2FA Google Authenticator:
 
-    Lien docs symfony pour JWT :
+    Documentation officielle
 
-    https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html
-
-    Lien docs symfony pour 2FA:
+   - JWT: https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html
     
-    https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
+   - 2FA: https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
 Etape 1:
 
