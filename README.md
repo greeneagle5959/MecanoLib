@@ -36,8 +36,9 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
   
     - php bin/console lexik:jwt:generate-keypair
     
-  fichier nolmio
-    -
+  Installation du bundle nelmio_cors 
+  
+    - composer require nelmio/cors-bundle
 
 ### Etape 2:
 
