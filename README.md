@@ -20,14 +20,16 @@ Installation:
     https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
 Etape 1
+
   Installation JWT (LexikJWTAuthenticationBundle)
     - composer require lexik/jwt-authentication-bundle
+    
   Génération des clés JWT
     - php bin/console lexik:jwt:generate-keypair
+    
   fichier nolmio
     -
 
-   
 Etape 2 
   Installation Bundle Google Authenticator
       - composer require scheb/two-factor-bundle
