@@ -130,7 +130,7 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
                 return $this->json(['erreur' => 'Code 2FA invalide'], 403);
             }
   
-## Gestion du 2FA : 
+## Gestion du 2FA :
  
      Activation 2FA :
          Endpoint: POST /api/v1/users/activer_2fa
