@@ -17,7 +17,11 @@ Installation:
 
     Authentification JWT + 2FA Google Authenticator:
 
-    Lien de la docs symfony:
+    Lien docs symfony pour JWT :
+
+    https://symfony.com/bundles/LexikJWTAuthenticationBundle/current/index.html
+
+    Lien docs symfony pour 2FA:
     
     https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
