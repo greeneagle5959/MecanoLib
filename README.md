@@ -100,8 +100,16 @@ Etape 4
          2- Si 2FA activé :
              * demande du code Google Authenticator
         Si OK :
-          génération du JWT :
+        
+          Génération du token :
             $token = $jwtManager->create($user);
+
+          Vérification 2FA : 
+
+            $g = new GoogleAuthenticator();
+            if (!$g->checkCode($user->getAuth2fa(), $authCode)) {
+                return $this->json(['erreur' => 'Code 2FA invalide'], 403);
+            }
 
     Exemple de Endpoint 
     // creation dune route pour generer le token
