@@ -1,18 +1,16 @@
 Description
 Ce projet implémente un système d’authentification sécurisé basé sur :
-
     - JWT (JSON Web Token)
     - 2FA (Google Authenticator)
     - Gestion des rôles (User, Admin, Super Admin)
+    
 Technologies utilisées
     - Symfony
     - LexikJWTAuthenticationBundle
     - SchebTwoFactorBundle
     - Sonata Google Authenticator
-
 Installation: 
-
-Authentification JWT + 2FA Google Authenticator
+    Authentification JWT + 2FA Google Authenticator
 
 Etape 1
   Installation JWT (LexikJWTAuthenticationBundle)
