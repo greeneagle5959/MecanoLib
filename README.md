@@ -4,7 +4,6 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
     - JWT (JSON Web Token)
     - 2FA (Google Authenticator)
     - Gestion des rôles (User, Admin, Super Admin)
-
 Technologies utilisées
     - Symfony
     - LexikJWTAuthenticationBundle
