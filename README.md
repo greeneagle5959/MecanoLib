@@ -14,7 +14,10 @@ Technologies utilisées
     - Sonata Google Authenticator
     
 Installation: 
+
     Authentification JWT + 2FA Google Authenticator
+    
+    https://symfony.com/doc/current/SchebTwoFactorBundle/providers/google.html
 
 Etape 1
   Installation JWT (LexikJWTAuthenticationBundle)
