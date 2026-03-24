@@ -5,10 +5,12 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'utilisateur')]
-class Utilisateur
+class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -160,6 +162,25 @@ class Utilisateur
         }
 
         return $this;
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->emailUtilisateur;
+    }
+
+    public function getRoles(): array
+    {
+        return [$this->role?->getNomRole() ?? 'ROLE_USER'];
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->mdpUtilisateur;
+    }
+
+    public function eraseCredentials(): void
+    {
     }
 
 }

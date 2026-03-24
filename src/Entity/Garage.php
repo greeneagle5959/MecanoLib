@@ -42,6 +42,9 @@ class Garage
     #[ORM\Column(name: 'img_logo', type: 'string', length: 255, nullable: true)]
     private ?string $imgLogo = null;
 
+    #[ORM\Column(name: 'is_valide', type: 'boolean', nullable: false)]
+    private bool $isValide = false;
+
     #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'garages')]
     #[ORM\JoinColumn(name: 'id_utilisateur', referencedColumnName: 'id_utilisateur', nullable: false)]
     private ?Utilisateur $utilisateur = null;
@@ -187,6 +190,18 @@ class Garage
     public function setImgLogo(?string $imgLogo): static
     {
         $this->imgLogo = $imgLogo;
+
+        return $this;
+    }
+
+    public function getIsValide(): bool
+    {
+        return $this->isValide;
+    }
+
+    public function setIsValide(bool $isValide): static
+    {
+        $this->isValide = $isValide;
 
         return $this;
     }

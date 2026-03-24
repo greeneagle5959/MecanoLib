@@ -15,4 +15,18 @@ class VilleRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Ville::class);
     }
+
+    /**
+     * @return Ville[]
+     */
+    public function findByNomPrefix(string $prefix, int $limit = 10): array
+    {
+        return $this->createQueryBuilder('v')
+            ->andWhere('LOWER(v.nomVille) LIKE LOWER(:prefix)')
+            ->setParameter('prefix', $prefix . '%')
+            ->orderBy('v.nomVille', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }

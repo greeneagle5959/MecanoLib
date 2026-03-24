@@ -1,17 +1,42 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        App\Entity\Utilisateur: 'auto'
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\Utilisateur
+                property: emailUtilisateur
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
+        login:
+            pattern: ^/api/v1/users/login
+            stateless: true
+            provider: app_user_provider
+            json_login:
+                check_path: app_user_login
+                username_path: email
+                password_path: mdp
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        ville:
+            pattern: ^/api/v1/(get_villes|get_ville|search_villes|get_garages_by_ville|new_ville|edit_ville|delete_ville)
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
+
         main:
             lazy: true
-            provider: users_in_memory
+            provider: app_user_provider
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
@@ -22,8 +47,18 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        - { path: ^/api/v1/users/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/inscrire_client$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/inscrire-garage$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/ajouter_superadmin$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/get_villes, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/get_ville, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/search_villes, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/get_garages_by_ville, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/new_ville, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/edit_ville, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/delete_ville, roles: PUBLIC_ACCESS }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
