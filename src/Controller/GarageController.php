@@ -599,11 +599,14 @@ final class GarageController extends AbstractController
         }
     }
     // verification si le garage existe avec le numero siret 
-    #[Route('api/v1/check_garage/{siret}', name: 'api_check_garage', methods: ['GET'])]
+   #[Route('/api/v1/check_garage/{siret}', name: 'api_check_garage', methods: ['GET'])]
     public function checkGarage(string $siret, GarageRepository $repo): JsonResponse
     {
         $garage = $repo->findOneBy(['siret' => $siret]);
-        return $this->json(['exists' => $garage ? true : false]);
+
+        return $this->json([
+            'exists' => $garage ? true : false
+        ]);
     }
     
 }

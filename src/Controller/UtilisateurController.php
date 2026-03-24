@@ -17,9 +17,18 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class UtilisateurController extends AbstractController
 {
+
+// verification du mail avant de saisier les information du formulaire 
+///
+
+
+
+
+
 // la methode pour inscrire un utilisateur (client)
     #[Route('/api/v1/users/inscrire_client', name: 'app_users_inscrire_client', methods: ['POST'])]
     public function registerClient( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher ): JsonResponse 
@@ -91,11 +100,62 @@ final class UtilisateurController extends AbstractController
         ], 201);
     }
 
+    // verifecation numero siret 
+    #[Route('/api/v1/check_siret_insee/{siret}', methods: ['GET'])]
+    public function checkSiretInsee(string $siret, HttpClientInterface $client): JsonResponse
+    {
+        try {
+            $response = $client->request(
+                'GET',
+                'https://recherche-entreprises.api.gouv.fr/search?q=' . $siret
+            );
+
+            $status = $response->getStatusCode();
+
+            if ($status !== 200) {
+                return $this->json([
+                    'exists' => false,
+                    'error' => 'API externe indisponible'
+                ]);
+            }
+
+            $data = $response->toArray(false);
+
+            if (!isset($data['results'][0])) {
+                return $this->json(['exists' => false]);
+            }
+
+            $e = $data['results'][0];
+            $siege = $e['siege'] ?? [];
+
+            return $this->json([
+                'exists' => true,
+                'nom' => $e['nom_complet'] ?? '',
+                'adresse' => $siege['adresse'] ?? '',
+                'ville' => $siege['libelle_commune'] ?? '',
+                'code_postal' => $siege['code_postal'] ?? '',
+                'code_insee' => $siege['commune'] ?? ''
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->json([
+                'exists' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     // methode pour inscrire un garage 
     #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
     public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher): JsonResponse
     {
+
         $data = json_decode($request->getContent(), true);
+
+        if (!$data) {
+            return $this->json([
+                'error' => 'JSON invalide ou vide'
+            ], 400);
+        }
 
         $nomGarage = $data['nom_garage'] ?? '';
         $email = $data['email'] ?? '';
@@ -124,9 +184,11 @@ final class UtilisateurController extends AbstractController
             return $this->json(['erreur' => 'Ce SIRET est déjà utilisé'], 400);
         }
 
-         if ($manager->getRepository(Garage::class)->findOneBy(['tva' => $tva])) {
+
+        if ($manager->getRepository(Garage::class)->findOneBy(['tva' => $tva])) {
             return $this->json(['erreur' => 'Ce TVA est déjà utilisé'], 400);
         }
+
 
         $roleGarage = $manager->getRepository(Role::class)->findOneBy(['nomRole' => 'ROLE_ADMIN']);
         if (!$roleGarage) {
