@@ -92,8 +92,12 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
                   
 
   ## Fonctionnement global:
+
+  ## Étape 1
+      Entite Utilisateur implements :
+          - TwoFactorInterface
   
-   ### Étape 1
+   ## Étape 2
         Endpoint dans le controller :
             - POST /api/v1/users/login
 
