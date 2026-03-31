@@ -12,16 +12,16 @@ class Prestation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_prestation', type: 'integer', nullable: false)]
-    private int $idPrestation;
+    #[ORM\Column(name: 'id_prestation', type: 'integer')]
+    private ?int $idPrestation = null;
 
-    #[ORM\Column(name: 'nom_prestation', type: 'string', length: 100, nullable: false)]
+    #[ORM\Column(name: 'nom_prestation', type: 'string', length: 100)]
     private string $nomPrestation;
 
-    #[ORM\Column(name: 'description_prestation', type: 'text', nullable: false)]
+    #[ORM\Column(name: 'description_prestation', type: 'text')]
     private string $descriptionPrestation;
 
-    #[ORM\Column(name: 'duree_prestation', type: 'string', length: 10, nullable: false)]
+    #[ORM\Column(name: 'duree_prestation', type: 'string', length: 10)]
     private string $dureePrestation;
 
     #[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'prestations')]
@@ -30,6 +30,7 @@ class Prestation
 
     #[ORM\ManyToMany(targetEntity: Garage::class, mappedBy: 'prestations')]
     private Collection $garages;
+
 
     public function __construct()
     {

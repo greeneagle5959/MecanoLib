@@ -13,28 +13,28 @@ class Garage
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_garage', type: 'integer', nullable: false)]
-    private int $idGarage;
+    #[ORM\Column(name: 'id_garage', type: 'integer')]
+    private ?int $idGarage = null;
 
-    #[ORM\Column(name: 'nom_garage', type: 'string', length: 50, nullable: false)]
+    #[ORM\Column(name: 'nom_garage', type: 'string', length: 50)]
     private string $nomGarage;
 
-    #[ORM\Column(name: 'email_garage', type: 'string', length: 255, nullable: false)]
+    #[ORM\Column(name: 'email_garage', type: 'string', length: 255)]
     private string $emailGarage;
 
-    #[ORM\Column(name: 'telephone_garage', type: 'string', length: 15, nullable: false)]
+    #[ORM\Column(name: 'telephone_garage', type: 'string', length: 15)]
     private string $telephoneGarage;
 
-    #[ORM\Column(name: 'adresse_garage', type: 'string', length: 80, nullable: false)]
+    #[ORM\Column(name: 'adresse_garage', type: 'string', length: 80)]
     private string $adresseGarage;
 
-    #[ORM\Column(name: 'date_creation', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'date_creation', type: 'datetime')]
     private \DateTimeInterface $dateCreation;
 
-    #[ORM\Column(name: 'siret', type: 'string', length: 15, nullable: false)]
+    #[ORM\Column(name: 'siret', type: 'string', length: 15)]
     private string $siret;
 
-    #[ORM\Column(name: 'tva', type: 'string', length: 25, nullable: false)]
+    #[ORM\Column(name: 'tva', type: 'string', length: 25)]
     private string $tva;
 
     #[ORM\Column(name: 'img_garage', type: 'string', length: 255, nullable: true)]

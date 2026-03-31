@@ -53,13 +53,17 @@ security:
         - { path: ^/api/v1/users/inscrire-garage, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/users/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/users/2fa_check, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/verify_2fa, roles:['ROLE_SUPER_ADMIN','ROLE_ADMIN','ROLE_USER']}
+        - {
+              path: ^/api/v1/users/verify_2fa,
+              roles: ["ROLE_SUPER_ADMIN", "ROLE_ADMIN", "ROLE_USER"],
+          }
+
         # toutes les routes concernant vehicule
-        - { path: ^/api/v1/choisir_marque, roles: ROLE_USER}
-        - { path: ^/api/v1/choisir_modele/d+/, roles: ROLE_USER}
+        - { path: ^/api/v1/choisir_marque, roles: ROLE_USER }
+        - { path: ^/api/v1/choisir_modele/d+/, roles: ROLE_USER }
         #- { path: ^/api/v1/client/add_vehicule, roles: ROLE_USER}
-        - { path: ^/api/v1/client/delete_vehicule/d+/, roles: ROLE_USER}
-        - { path: ^/api/v1/client/vehicules/d+/, roles: ROLE_USER}
+        - { path: ^/api/v1/client/delete_vehicule/d+/, roles: ROLE_USER }
+        - { path: ^/api/v1/client/vehicules/d+/, roles: ROLE_USER }
         # toutes les routes concernant Rendez-vous
         - { path: ^/api/v1/creer_rdv, roles: ROLE_USER }
 

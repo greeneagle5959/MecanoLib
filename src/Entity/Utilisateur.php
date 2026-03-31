@@ -35,6 +35,12 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface ,
     #[ORM\Column(name: 'is_2fa', type: 'boolean', nullable: false)]
     private bool $is2fa;
 
+    #[ORM\Column(name: 'reset_token', type: 'string', length: 255, nullable: true)]
+    private ?string $resetToken = null;
+
+    #[ORM\Column(name: 'reset_token_expires_at', type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $resetTokenExpiresAt = null;
+
     #[ORM\ManyToOne(targetEntity: Role::class, inversedBy: 'utilisateurs')]
     #[ORM\JoinColumn(name: 'id_role', referencedColumnName: 'id_role', nullable: false)]
     private ?Role $role = null;
@@ -189,6 +195,27 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface ,
     public function getGoogleAuthenticatorUsername(): string
     {
         return $this->emailUtilisateur;
+    }
+    public function getResetToken(): ?string
+    {
+        return $this->resetToken;
+    }
+
+    public function setResetToken(?string $resetToken): static
+    {
+        $this->resetToken = $resetToken;
+        return $this;
+    }
+
+    public function getResetTokenExpiresAt(): ?\DateTimeInterface
+    {
+        return $this->resetTokenExpiresAt;
+    }
+
+    public function setResetTokenExpiresAt(?\DateTimeInterface $date): static
+    {
+        $this->resetTokenExpiresAt = $date;
+        return $this;
     }
 
 }
