@@ -345,6 +345,7 @@ final class UtilisateurController extends AbstractController
             'token' => $token,
             'userId' => $user->getIdUtilisateur(),
             'email' => $user->getEmailUtilisateur(),
+           
             'roles' => $user->getRoles(),
         ]);
     }
@@ -368,6 +369,7 @@ final class UtilisateurController extends AbstractController
             'roles'    => $user->getRoles(),
             'nom'      => $client?->getNomClient() ?? $googleautharage?->getNomGarage() ?? null,
             'prenom'   => $client?->getPrenomClient() ?? null,
+            'clientId' => $client?->getIdClient(),
             'is2fa' => $user->getIs2fa(),
             
         ]);

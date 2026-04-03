@@ -145,6 +145,30 @@ final class RendezVousController extends AbstractController
 
         return new JsonResponse($data);
     }
+    #[Route('/api/v1/client/{idClient}/rdvs', name: 'client_rdvs', methods: ['GET'])]
+public function getClientRdvs(int $idClient, RendezVousRepository $rdvRepository): JsonResponse
+{
+    $rdvs = $rdvRepository->findRdvByClient($idClient);
 
+    if (!$rdvs) {
+        return $this->json([]);
+    }
+
+    $data = array_map(function ($rdv) {
+        return [
+            'id_rdv' => $rdv['id_rdv'],
+            'date_debut' => $rdv['date_debut']->format('d/m/Y'),
+            'heure_debut' => $rdv['date_debut']->format('H:i'),
+            'date_fin' => $rdv['date_fin']->format('d/m/Y'),
+            'heure_fin' => $rdv['date_fin']->format('H:i'),
+            'garage' => $rdv['garage'],
+            'immatriculation' => $rdv['immatriculation'],
+            'prestation' => $rdv['prestation'],
+            'status' => $rdv['status'] ?? 'En attente', // afficher le statut défini par le garage
+        ];
+    }, $rdvs);
+
+    return $this->json($data);
+}
 
 }

@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Entity\Garage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Entity\Lier;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]

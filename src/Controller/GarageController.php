@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\RendezVous;
 use App\Entity\Associer;
 use App\Entity\Categorie;
 use App\Entity\Garage;
@@ -9,7 +10,6 @@ use App\Entity\Historique;
 use App\Entity\Horaire;
 use App\Entity\Jour;
 use App\Entity\Prestation;
-use App\Entity\RendezVous;
 use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
 use App\Entity\Ville;
@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('', name: 'app_garage_')]
+
 final class GarageController extends AbstractController
 {
     //  On recupere l'EntityManager une fois pour tout le controleur.
@@ -81,7 +81,7 @@ final class GarageController extends AbstractController
         }
 
         if (isset($payload['villeId'])) {
-            $ville = $this->entityManager->getRepository(\App\Entity\Ville::class)->find((int) $payload['villeId']);
+            $ville = $this->entityManager->getRepository(\api\Entity\Ville::class)->find((int) $payload['villeId']);
             if ($ville === null) {
                 return $this->json(['error' => 'Ville introuvable'], Response::HTTP_BAD_REQUEST);
             }
@@ -200,7 +200,7 @@ final class GarageController extends AbstractController
             $horaire = $this->entityManager->getRepository(Horaire::class)->find((int) $item['horaireId']);
             if ($jour === null || $horaire === null) {
                 return $this->json(['error' => 'Jour ou horaire introuvable'], Response::HTTP_BAD_REQUEST);
-            } //         on verifie que l'horaire appartient bien au garage avant de l'associer au jour.
+            } //         on verifie que l'horaire apiartient bien au garage avant de l'associer au jour.
             if ($horaire->getGarage()?->getIdGarage() !== $garage->getIdGarage()) {
                 return $this->json(['error' => 'Horaire non associe a ce garage'], Response::HTTP_BAD_REQUEST);
             }
@@ -224,7 +224,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on ajoute une nouvelle prestation au garage.
-    #[Route('app/v1/prestations', name: 'prestations_add', methods: ['POST'])]
+    #[Route('api/v1/prestations', name: 'prestations_add', methods: ['POST'])]
     public function ajouterPrestation(Request $request): JsonResponse
     {
         $payload = $this->recupererPayload($request);
@@ -267,7 +267,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on vire une prestation du garage, et de la base si plus utilisee.
-    #[Route('app/v1/prestations/{id}', name: 'prestations_delete', methods: ['DELETE'])]
+    #[Route('api/v1/prestations/{id}', name: 'prestations_delete', methods: ['DELETE'])]
     public function supprimerPrestation(int $id, Request $request): JsonResponse
     { 
         $payload = $this->recupererPayload($request);
@@ -321,7 +321,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on affiche le detail complet d'un rendez-vous.
-    #[Route('app/v1/rdv/{id}', name: 'rdv_show', methods: ['GET'])]
+    #[Route('api/v1/rdv/{id}', name: 'rdv_show', methods: ['GET'])]
     public function afficherRdv(int $id): JsonResponse
     { //       on recupere le rdv demande, sinon on retourne une erreur.
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -344,7 +344,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on recupere juste les prestations liees a un rendez-vous.
-    #[Route('app/v1/rdv/{id}/prestations', name: 'rdv_prestations_show', methods: ['GET'])]
+    #[Route('api/v1/rdv/{id}/prestations', name: 'rdv_prestations_show', methods: ['GET'])]
     public function afficherPrestationsRdv(int $id): JsonResponse
     { //       on recupere le rdv demande, sinon on retourne une erreur.
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -359,7 +359,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on gere le statut d'un rendez-vous (accepte, refuse, etc.).
-    #[Route('app/v1/rdv/{id}/gestion', name: 'rdv_manage', methods: ['PATCH'])]
+    #[Route('/api/v1/rdv/{id}/gestion', name: 'rdv_manage', methods: ['PATCH'])]
     public function gererRdv(int $id, Request $request): JsonResponse
     { //       on recupere le rdv demande, sinon on retourne une erreur.
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -398,9 +398,29 @@ final class GarageController extends AbstractController
             'rdv' => $this->serialiserRdv($rdv),
         ]);
     }
+    // Afficher le status de rdv 
+   
+   #[Route('/api/v1/rdv/{id}/status', name: 'rdv_status_show', methods: ['GET'])]
+    public function afficherStatusRdv(int $id): JsonResponse
+    {
+        // On récupère le rendez-vous
+        $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
+
+        if ($rdv === null) {
+            return $this->json([
+                'error' => 'Rendez-vous introuvable'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // On renvoie uniquement le statut
+        return $this->json([
+            'idRdv' => $rdv->getIdRdv(),
+            'status' => $rdv->getStatusRdv()?->getLibStatusRdv() ?? 'En attente',
+        ]);
+    }
 
     // Ici on ajoute le compte-rendu d'intervention dans l'historique client.
-    #[Route('app/v1/rdv/{id}/historique', name: 'rdv_historique_complete', methods: ['POST'])]
+    #[Route('api/v1/rdv/{id}/historique', name: 'rdv_historique_complete', methods: ['POST'])]
     public function completerHistoriqueClient(int $id, Request $request): JsonResponse
     {
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -541,7 +561,7 @@ final class GarageController extends AbstractController
     }
 
     //  route de validation d'un garage par un super admin pour affichage.
-    #[Route('app/v1/garages/{id}/validation', name: 'garage_valider', methods: ['PATCH'])]
+    #[Route('api/v1/garages/{id}/validation', name: 'garage_valider', methods: ['PATCH'])]
     public function validerGarage(int $id, Request $request): JsonResponse
     {
         if (!$this->isGranted('ROLE_SUPER_ADMIN')) {
@@ -608,5 +628,5 @@ final class GarageController extends AbstractController
             'exists' => $garage ? true : false
         ]);
     }
-    
+   
 }

@@ -30,17 +30,28 @@ class PrestationController extends AbstractController
     }
 
     #[Route('/api/v1/get_prestations_by_categorie/{idCategorie}', name: 'api_get_prestations_by_categorie', methods: ['GET'])]
-    public function prestationByCategorie(int $idCategorie, PrestationRepository $prestationRepository): JsonResponse
+    public function prestationByCategorie(int $idCategorie, CategorieRepository $categorieRepository): JsonResponse
     {
-        $prestations = $prestationRepository->findBy(['categorie' => $idCategorie]);
+        $categorie = $categorieRepository->find($idCategorie);
+        if (!$categorie) {
+            return $this->json(['message' => 'Catégorie introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
 
-        $nomsPrestations = array_map(
-            static fn (Prestation $prestation): array => ['nomprestation' => $prestation->getNomPrestation()],
-            $prestations
+        $prestations = $categorie->getPrestations(); 
+
+        $data = array_map(
+            static fn ($p) => [
+                'id' => $p->getIdPrestation(),
+                'nomprestation' => $p->getNomPrestation(),
+                'description' => $p->getDescriptionPrestation(),
+                'duree' => $p->getDureePrestation(),
+            ],
+            $prestations->toArray()
         );
 
-        return $this->json($nomsPrestations);
+        return $this->json($data);
     }
+    
     #[Route('/api/v1/get_prestations_by_garage/{idGarage}', name: 'api_get_prestations_by_garage', methods: ['GET'])]
     public function prestationsByGarage(int $idGarage, EntityManagerInterface $em): JsonResponse
     {
@@ -286,5 +297,6 @@ class PrestationController extends AbstractController
             'message' => 'Prestation supprimée du garage'
         ]);
     }
+   
 
 }

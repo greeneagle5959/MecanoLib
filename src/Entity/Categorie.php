@@ -43,7 +43,7 @@ class Categorie
         return $this;
     }
 
-/** @return Collection<int, Prestation> */
+
     public function getPrestations(): Collection
     {
         return $this->prestations;

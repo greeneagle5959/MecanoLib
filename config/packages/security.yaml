@@ -31,6 +31,7 @@ security:
         api:
             pattern: ^/api/v1/users
             stateless: true
+
             provider: users_in_database
             jwt: ~
 
@@ -59,13 +60,13 @@ security:
           }
 
         # toutes les routes concernant vehicule
-        - { path: ^/api/v1/choisir_marque, roles: ROLE_USER }
-        - { path: ^/api/v1/choisir_modele/d+/, roles: ROLE_USER }
+        #- { path: ^/api/v1/choisir_marque, roles: ROLE_USER }
+        #- { path: ^/api/v1/choisir_modele/d+/, roles: ROLE_USER }
         #- { path: ^/api/v1/client/add_vehicule, roles: ROLE_USER}
-        - { path: ^/api/v1/client/delete_vehicule/d+/, roles: ROLE_USER }
-        - { path: ^/api/v1/client/vehicules/d+/, roles: ROLE_USER }
+        #- { path: ^/api/v1/client/delete_vehicule/d+/, roles: ROLE_USER }
+        #- { path: ^/api/v1/client/vehicules/d+/, roles: ROLE_USER }
         # toutes les routes concernant Rendez-vous
-        - { path: ^/api/v1/creer_rdv, roles: ROLE_USER }
+        #- { path: ^/api/v1/creer_rdv, roles: ROLE_USER }
 
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }

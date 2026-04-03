@@ -108,7 +108,7 @@ final class VehiculeController extends AbstractController
     public function deleteVehicule( int $id,  EntityManagerInterface $manager   ): JsonResponse 
     {
 
-        $vehicule = $em->getRepository(Vehicule::class)->find($id);
+        $vehicule = $manager->getRepository(Vehicule::class)->find($id);
 
         if (!$vehicule) {
             return new JsonResponse([
