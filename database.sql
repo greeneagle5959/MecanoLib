@@ -243,6 +243,19 @@ CREATE TABLE prestation (
 
 
 -- ----------------------------
+-- Table: proposer
+-- ----------------------------
+CREATE TABLE proposer (
+  id_garage INT NOT NULL,
+  id_prestation INT NOT NULL,
+  prix DECIMAL(8,2) DEFAULT NULL,
+  CONSTRAINT proposer_PK PRIMARY KEY (id_garage, id_prestation),
+  CONSTRAINT proposer_id_garage_FK FOREIGN KEY (id_garage) REFERENCES garage (id_garage),
+  CONSTRAINT proposer_id_prestation_FK FOREIGN KEY (id_prestation) REFERENCES prestation (id_prestation)
+)ENGINE=InnoDB;
+
+
+-- ----------------------------
 -- Table: avis
 -- ----------------------------
 CREATE TABLE avis (

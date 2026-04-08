@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'jour')]
 class Jour
 {
+    // Jour représente les jours de la semaine (Lundi, Mardi, etc.) et est lié à l'entité Associer pour définir les disponibilités des garages.
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'id_jour', type: 'integer', nullable: false)]

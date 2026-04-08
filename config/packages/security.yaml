@@ -1,10 +1,11 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        App\Entity\Utilisateur: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "argon2i"
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        app_user_provider:
+        users_in_memory: { memory: null }
+        users_in_database:
             entity:
                 class: App\Entity\Utilisateur
                 property: emailUtilisateur
@@ -12,31 +13,30 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-
         login:
             pattern: ^/api/v1/users/login
             stateless: true
-            provider: app_user_provider
-            json_login:
-                check_path: app_user_login
-                username_path: email
-                password_path: mdp
-                success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: lexik_jwt_authentication.handler.authentication_failure
-
-        ville:
-            pattern: ^/api/v1/(get_villes|get_ville|search_villes|get_garages_by_ville|new_ville|edit_ville|delete_ville)
-            security: false
+            provider: users_in_database
+            # json_login:
+            #    check_path: /api/v1/users/login
+            #   username_path: emailUtilisateur
+            #    password_path: mdpUtilisateur
+            #    success_handler: lexik_jwt_authentication.handler.authentication_success
+            #    failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            # verifier la connexion avec 2fa
+            # two_factor:
+            #    auth_form_path: /api/v1/users/login
+            #    check_path: /api/v1/users/2fa_check
 
         api:
-            pattern: ^/api
+            pattern: ^/(api|app)/v1
             stateless: true
-            provider: app_user_provider
+            provider: users_in_database
             jwt: ~
 
         main:
             lazy: true
-            provider: app_user_provider
+            provider: users_in_memory
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
@@ -47,18 +47,27 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        - { path: ^/api/v1/users/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/inscrire_client$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/inscrire-garage$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/ajouter_superadmin$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/get_villes, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/get_ville, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/search_villes, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/get_garages_by_ville, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/new_ville, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/edit_ville, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/delete_ville, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/v1/users/ajouter_superadmin, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/api/v1/garages, roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] }
+        - { path: ^/app/v1/garages/\d+/validation, roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] }
+        - { path: ^/api/v1/garages/\d+/validation, roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'] }
+        #- { path: ^/api/v1/users/get_utilisateur, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/api/v1/users/inscrire_client, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/inscrire-garage, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/2fa_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/verify_2fa, roles: ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN', 'ROLE_USER'] }
+        # toutes les routes concernant vehicule
+        - { path: ^/api/v1/choisir_marque, roles: ROLE_USER }
+        - { path: ^/api/v1/choisir_modele/\d+, roles: ROLE_USER }
+        #- { path: ^/api/v1/client/add_vehicule, roles: ROLE_USER}
+        - { path: ^/api/v1/client/delete_vehicule/\d+, roles: ROLE_USER }
+        - { path: ^/api/v1/client/vehicules/\d+, roles: ROLE_USER }
+        # toutes les routes concernant Rendez-vous
+        - { path: ^/api/v1/creer_rdv, roles: ROLE_USER }
+
+        # - { path: ^/admin, roles: ROLE_ADMIN }
+        # - { path: ^/profile, roles: ROLE_USER }
 
 when@test:
     security:
@@ -68,7 +77,7 @@ when@test:
             # are not important, waste resources and increase test times. The following
             # reduces the work factor to the lowest possible values.
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
+                algorithm: argon2i
                 cost: 4 # Lowest possible value for bcrypt
                 time_cost: 3 # Lowest possible value for argon
                 memory_cost: 10 # Lowest possible value for argon

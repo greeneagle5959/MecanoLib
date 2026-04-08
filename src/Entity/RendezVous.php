@@ -141,6 +141,11 @@ class RendezVous
         return $this->statusRdv;
     }
 
+    public function getClient(): ?Client
+    {
+        return $this->vehicule?->getClient();
+    }
+
     public function setStatusRdv(?StatusRdv $statusRdv): static
     {
         $this->statusRdv = $statusRdv;

@@ -62,9 +62,6 @@ class Garage
     #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Valeur::class)]
     private Collection $valeurs;
 
-    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Prestation::class)]
-    private Collection $prestations;
-
     #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Avis::class)]
     private Collection $avisList;
 
@@ -76,7 +73,6 @@ class Garage
         $this->horaires = new ArrayCollection();
         $this->souscriptions = new ArrayCollection();
         $this->valeurs = new ArrayCollection();
-        $this->prestations = new ArrayCollection();
         $this->avisList = new ArrayCollection();
         $this->rendezVousList = new ArrayCollection();
     }
@@ -305,33 +301,6 @@ class Garage
         if ($this->valeurs->removeElement($valeur)) {
             if ($valeur->getGarage() === $this) {
                 $valeur->setGarage(null);
-            }
-        }
-
-        return $this;
-    }
-
-/** @return Collection<int, Prestation> */
-    public function getPrestations(): Collection
-    {
-        return $this->prestations;
-    }
-
-    public function addPrestation(Prestation $prestation): static
-    {
-        if (!$this->prestations->contains($prestation)) {
-            $this->prestations->add($prestation);
-            $prestation->setGarage($this);
-        }
-
-        return $this;
-    }
-
-    public function removePrestation(Prestation $prestation): static
-    {
-        if ($this->prestations->removeElement($prestation)) {
-            if ($prestation->getGarage() === $this) {
-                $prestation->setGarage(null);
             }
         }
 

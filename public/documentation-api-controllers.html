@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MecanoLib - Documentation Controllers API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f2ea;
+      --ink: #182126;
+      --muted: #4f5b62;
+      --card: #fffdf8;
+      --line: #d5cec0;
+      --accent: #0e7a6d;
+      --accent-2: #f35b04;
+      --chip: #e7f6f4;
+      --shadow: 0 10px 30px rgba(24, 33, 38, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 500px at 10% -10%, #f7d9b5 0%, transparent 60%),
+        radial-gradient(900px 450px at 120% 0%, #b8e5de 0%, transparent 60%),
+        var(--bg);
+      line-height: 1.5;
+    }
+
+    header {
+      padding: 48px 20px 30px;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #132026 0%, #0e7a6d 60%, #f35b04 120%);
+      border-radius: 22px;
+      color: #fff;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: -30% -20% auto auto;
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(255,255,255,0.32), transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      padding: 32px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 3vw, 2.7rem);
+      letter-spacing: 0.2px;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 900px;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.88rem;
+    }
+
+    main {
+      padding: 0 20px 40px;
+    }
+
+    .search {
+      margin: 24px 0 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search input {
+      width: min(640px, 100%);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.98rem;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.2s ease;
+    }
+
+    .search input:focus { border-color: var(--accent); }
+
+    .legend {
+      font-size: 0.93rem;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .card.hidden {
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      height: 0;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      overflow: hidden;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.06rem;
+    }
+
+    .desc {
+      color: var(--muted);
+      margin: 8px 0 12px;
+      font-size: 0.94rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chip {
+      background: var(--chip);
+      border: 1px solid #cbe9e4;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.76rem;
+      color: #0c4d45;
+    }
+
+    ul { margin: 0; padding-left: 18px; }
+
+    li {
+      margin-bottom: 6px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      word-break: break-word;
+    }
+
+    .usage {
+      margin-top: 28px;
+      background: #182126;
+      color: #f2f4f5;
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .usage h3 { margin: 0 0 10px; font-size: 1.15rem; }
+
+    pre {
+      margin: 10px 0 0;
+      background: #0f171b;
+      border: 1px solid #2c3d45;
+      color: #d5f2ee;
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: "IBM Plex Mono", monospace;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #c2d3da;
+      font-size: 0.92rem;
+    }
+
+    footer {
+      padding: 16px 20px 36px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .hero-inner { padding: 24px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-inner">
+        <h1>Documentation API - Controllers MecanoLib</h1>
+        <p class="lead">
+          Ce document explique ce que gere chaque controller, les routes exposees, et comment consommer ces routes depuis ton frontend React.
+        </p>
+        <div class="meta">
+          <span class="badge">Base API: /api/v1</span>
+          <span class="badge">Format: JSON</span>
+          <span class="badge">Date: 31/03/2026</span>
+          <span class="badge">Projet: MecanoLib</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="search">
+      <input id="q" type="text" placeholder="Rechercher un controller ou une route (ex: vehicule, /users/login, status)" />
+    </div>
+    <p class="legend">Format des routes: METHODE PATH. Les routes sans slash initial dans le code restent list ees ici en forme finale (avec /).</p>
+
+    <div class="grid" id="controllers">
+      <article class="card" data-search="associer association jour horaire">
+        <h2>AssocierController</h2>
+        <p class="desc">Gere les associations Jour <-> Horaire (planning hebdo).</p>
+        <div class="chips"><span class="chip">Planning</span><span class="chip">Relation composite</span></div>
+        <ul>
+          <li>GET /api/v1/get_associations</li>
+          <li>GET /api/v1/get_associations_by_jour/{idJour}</li>
+          <li>GET /api/v1/get_associations_by_horaire/{idHoraire}</li>
+          <li>GET /api/v1/get_association/{idJour}/{idHoraire}</li>
+          <li>POST /api/v1/new_association</li>
+          <li>POST /api/v1/edit_association/{idJour}/{idHoraire}</li>
+          <li>DELETE /api/v1/delete_association/{idJour}/{idHoraire}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="avis reviews garage client note commentaire">
+        <h2>AvisController</h2>
+        <p class="desc">Gere les avis clients sur les garages (note + commentaire).</p>
+        <div class="chips"><span class="chip">Avis</span><span class="chip">Client</span></div>
+        <ul>
+          <li>GET /api/v1/get_avis</li>
+          <li>GET /api/v1/get_avis_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_avis_by_client/{idClient}</li>
+          <li>GET /api/v1/get_un_avis/{id}</li>
+          <li>POST /api/v1/new_avis</li>
+          <li>POST /api/v1/edit_avis/{id}</li>
+          <li>DELETE /api/v1/delete_avis/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="categorie catalog prestation">
+        <h2>CategorieController</h2>
+        <p class="desc">CRUD des categories de prestations.</p>
+        <div class="chips"><span class="chip">Catalogue</span></div>
+        <ul>
+          <li>GET /api/v1/get_categories</li>
+          <li>GET /api/v1/get_categorie/{id}</li>
+          <li>POST /api/v1/new_categorie</li>
+          <li>POST /api/v1/edit_categorie/{id}</li>
+          <li>DELETE /api/v1/delete_categorie/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="client utilisateur profile">
+        <h2>ClientController</h2>
+        <p class="desc">CRUD des clients et lien vers utilisateur.</p>
+        <div class="chips"><span class="chip">Client</span><span class="chip">Compte</span></div>
+        <ul>
+          <li>GET /api/v1/get_clients</li>
+          <li>GET /api/v1/get_clients_by_utilisateur/{idUtilisateur}</li>
+          <li>GET /api/v1/get_client/{id}</li>
+          <li>POST /api/v1/new_client</li>
+          <li>POST /api/v1/edit_client/{id}</li>
+          <li>DELETE /api/v1/delete_client/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="files rdv image commentaire">
+        <h2>FilesController</h2>
+        <p class="desc">Gere les fichiers/commentaires rattaches a un rendez-vous.</p>
+        <div class="chips"><span class="chip">Media</span><span class="chip">RDV</span></div>
+        <ul>
+          <li>GET /api/v1/get_files</li>
+          <li>GET /api/v1/get_files_by_rdv/{idRdv}</li>
+          <li>GET /api/v1/get_file/{id}</li>
+          <li>POST /api/v1/new_file</li>
+          <li>POST /api/v1/edit_file/{id}</li>
+          <li>DELETE /api/v1/delete_file/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="garage profil horaires planning prestation rdv validation superadmin">
+        <h2>GarageController</h2>
+        <p class="desc">Profil garage, horaires/planning, prestations garage, gestion RDV, validation superadmin.</p>
+        <div class="chips"><span class="chip">Garage</span><span class="chip">Back-office</span></div>
+        <ul>
+          <li>GET /api/v1/profil</li>
+          <li>PUT|PATCH /api/v1/profil</li>
+          <li>DELETE /api/v1/profil</li>
+          <li>PATCH /api/v1/horaires/ouvertures-fermetures</li>
+          <li>PUT|PATCH /api/v1/planning/semaine</li>
+          <li>POST /app/v1/prestations</li>
+          <li>DELETE /app/v1/prestations/{id}</li>
+          <li>GET /api/v1/rdv</li>
+          <li>GET /app/v1/rdv/{id}</li>
+          <li>GET /app/v1/rdv/{id}/prestations</li>
+          <li>PATCH /app/v1/rdv/{id}/gestion</li>
+          <li>POST /app/v1/rdv/{id}/historique</li>
+          <li>GET /api/v1/garages</li>
+          <li>PATCH /app/v1/garages/{id}/validation</li>
+          <li>GET /api/v1/check_garage/{siret}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="historique intervention compte rendu">
+        <h2>HistoriqueController</h2>
+        <p class="desc">Historique des interventions liees aux RDV.</p>
+        <div class="chips"><span class="chip">Historique</span></div>
+        <ul>
+          <li>GET /api/v1/get_historiques</li>
+          <li>GET /api/v1/get_historiques_by_rdv/{idRdv}</li>
+          <li>GET /api/v1/get_historique/{id}</li>
+          <li>POST /api/v1/new_historique</li>
+          <li>POST /api/v1/edit_historique/{id}</li>
+          <li>DELETE /api/v1/delete_historique/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="horaire ouverture fermeture garage">
+        <h2>HoraireController</h2>
+        <p class="desc">CRUD des horaires et recherche par garage.</p>
+        <div class="chips"><span class="chip">Horaires</span></div>
+        <ul>
+          <li>GET /api/v1/get_horaires</li>
+          <li>GET /api/v1/get_horaires_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_horaire/{id}</li>
+          <li>POST /api/v1/new_horaire</li>
+          <li>POST /api/v1/edit_horaire/{id}</li>
+          <li>DELETE /api/v1/delete_horaire/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="jour semaine planning">
+        <h2>JourController</h2>
+        <p class="desc">CRUD des jours de semaine utilises dans le planning.</p>
+        <div class="chips"><span class="chip">Calendrier</span></div>
+        <ul>
+          <li>GET /api/v1/get_jours</li>
+          <li>GET /api/v1/get_jour/{id}</li>
+          <li>POST /api/v1/new_jour</li>
+          <li>POST /api/v1/edit_jour/{id}</li>
+          <li>DELETE /api/v1/delete_jour/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="lier liaison rdv prestation">
+        <h2>LierController</h2>
+        <p class="desc">Associe des prestations a un rendez-vous.</p>
+        <div class="chips"><span class="chip">RDV</span><span class="chip">Prestation</span></div>
+        <ul>
+          <li>GET /api/v1/get_liaisons</li>
+          <li>GET /api/v1/get_liaisons_by_rdv/{idRdv}</li>
+          <li>GET /api/v1/get_liaisons_by_prestation/{idPrestation}</li>
+          <li>GET /api/v1/get_liaison/{idRdv}/{idPrestation}</li>
+          <li>POST /api/v1/new_liaison</li>
+          <li>POST /api/v1/edit_liaison/{idRdv}/{idPrestation}</li>
+          <li>DELETE /api/v1/delete_liaison/{idRdv}/{idPrestation}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="marque modele voiture">
+        <h2>MarqueController</h2>
+        <p class="desc">CRUD des marques auto et lien vers modele.</p>
+        <div class="chips"><span class="chip">Vehicule</span></div>
+        <ul>
+          <li>GET /api/v1/get_marques</li>
+          <li>GET /api/v1/get_marques_by_modele/{idModele}</li>
+          <li>GET /api/v1/get_marque/{id}</li>
+          <li>POST /api/v1/new_marque</li>
+          <li>POST /api/v1/edit_marque/{id}</li>
+          <li>DELETE /api/v1/delete_marque/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="modele marques vehicule">
+        <h2>ModeleController</h2>
+        <p class="desc">CRUD des modeles de vehicules et listing des marques par modele.</p>
+        <div class="chips"><span class="chip">Vehicule</span></div>
+        <ul>
+          <li>GET /api/v1/get_modeles</li>
+          <li>GET /api/v1/get_modele/{id}</li>
+          <li>GET /api/v1/get_marques_modele/{id}</li>
+          <li>POST /api/v1/new_modele</li>
+          <li>POST /api/v1/edit_modele/{id}</li>
+          <li>DELETE /api/v1/delete_modele/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="notifications status rdv">
+        <h2>NotificationsController</h2>
+        <p class="desc">CRUD des notifications, filtre par statut et par RDV.</p>
+        <div class="chips"><span class="chip">Notifications</span></div>
+        <ul>
+          <li>GET /api/v1/get_notifications</li>
+          <li>GET /api/v1/get_notifications_by_status/{idStatusNotif}</li>
+          <li>GET /api/v1/get_notifications_by_rdv/{idRdv}</li>
+          <li>GET /api/v1/get_notification/{id}</li>
+          <li>POST /api/v1/new_notification</li>
+          <li>POST /api/v1/edit_notification/{id}</li>
+          <li>DELETE /api/v1/delete_notification/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="prestation categorie garage proposer">
+        <h2>PrestationController</h2>
+        <p class="desc">CRUD des prestations et gestion des prestations d un garage.</p>
+        <div class="chips"><span class="chip">Prestations</span></div>
+        <ul>
+          <li>GET /api/v1/get_prestations</li>
+          <li>GET /api/v1/get_prestations_by_categorie/{idCategorie}</li>
+          <li>GET /api/v1/get_prestations_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_prestation/{id}</li>
+          <li>POST /api/v1/new_prestation</li>
+          <li>POST /api/v1/edit_prestation/{id}</li>
+          <li>DELETE /api/v1/delete_prestation/{id}</li>
+          <li>POST /api/v1/garage/{idGarage}/add_prestations</li>
+          <li>DELETE /api/v1/garage/{idGarage}/delete_prestation/{idPrestation}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="proposer garage prestation prix">
+        <h2>ProposerController</h2>
+        <p class="desc">Lie un garage a une prestation avec un prix.</p>
+        <div class="chips"><span class="chip">Tarification</span></div>
+        <ul>
+          <li>GET /api/v1/get_propositions</li>
+          <li>GET /api/v1/get_propositions_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_proposition/{idGarage}/{idPrestation}</li>
+          <li>POST /api/v1/new_proposition</li>
+          <li>POST /api/v1/edit_proposition/{idGarage}/{idPrestation}</li>
+          <li>DELETE /api/v1/delete_proposition/{idGarage}/{idPrestation}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="rendezvous rdv status garage">
+        <h2>RendezVousController</h2>
+        <p class="desc">Creation, changement statut, modification et listing des RDV d un garage.</p>
+        <div class="chips"><span class="chip">RDV</span></div>
+        <ul>
+          <li>POST /api/v1/creer_rdv</li>
+          <li>POST /api/v1/changer_status</li>
+          <li>POST /api/v1/modifier_rdv</li>
+          <li>GET /api/v1/garage/{idGarage}/rdvs</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="reseaux sociaux garage valeur qrcode">
+        <h2>ReseauSociauxController</h2>
+        <p class="desc">CRUD des reseaux sociaux et recuperation des reseaux utilises par garage.</p>
+        <div class="chips"><span class="chip">Social</span></div>
+        <ul>
+          <li>GET /api/v1/get_reseaux_sociaux</li>
+          <li>GET /api/v1/get_reseaux_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_reseau_social/{id}</li>
+          <li>POST /api/v1/new_reseau_social</li>
+          <li>POST /api/v1/edit_reseau_social/{id}</li>
+          <li>DELETE /api/v1/delete_reseau_social/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="role utilisateur permissions">
+        <h2>RoleController</h2>
+        <p class="desc">CRUD des roles et listing des utilisateurs par role.</p>
+        <div class="chips"><span class="chip">Auth</span></div>
+        <ul>
+          <li>GET /api/v1/get_roles</li>
+          <li>GET /api/v1/get_utilisateurs_by_role/{idRole}</li>
+          <li>GET /api/v1/get_role/{id}</li>
+          <li>POST /api/v1/new_role</li>
+          <li>POST /api/v1/edit_role/{id}</li>
+          <li>DELETE /api/v1/delete_role/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="souscription abonnement garage">
+        <h2>SouscriptionController</h2>
+        <p class="desc">CRUD des souscriptions des garages aux abonnements.</p>
+        <div class="chips"><span class="chip">Abonnement</span></div>
+        <ul>
+          <li>GET /api/v1/get_souscriptions</li>
+          <li>GET /api/v1/get_souscriptions_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_souscriptions_by_abonnement/{idAbonnement}</li>
+          <li>GET /api/v1/get_souscription/{id}</li>
+          <li>POST /api/v1/new_souscription</li>
+          <li>POST /api/v1/edit_souscription/{id}</li>
+          <li>DELETE /api/v1/delete_souscription/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="status notif notifications">
+        <h2>StatusNotifController</h2>
+        <p class="desc">CRUD des statuts de notifications et listing des notifications par statut.</p>
+        <div class="chips"><span class="chip">Notifications</span></div>
+        <ul>
+          <li>GET /api/v1/get_status_notifs</li>
+          <li>GET /api/v1/get_status_notif/{id}</li>
+          <li>GET /api/v1/get_notifications_status_notif/{id}</li>
+          <li>POST /api/v1/new_status_notif</li>
+          <li>POST /api/v1/edit_status_notif/{id}</li>
+          <li>DELETE /api/v1/delete_status_notif/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="status rdv rendezvous">
+        <h2>StatusRdvController</h2>
+        <p class="desc">CRUD des statuts de rendez-vous (en attente, accepte, refuse...).</p>
+        <div class="chips"><span class="chip">RDV</span><span class="chip">Status</span></div>
+        <ul>
+          <li>GET /api/v1/get_status_rdvs</li>
+          <li>GET /api/v1/get_status_rdv/{id}</li>
+          <li>POST /api/v1/new_status_rdv</li>
+          <li>POST /api/v1/edit_status_rdv/{id}</li>
+          <li>DELETE /api/v1/delete_status_rdv/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="utilisateur users login register 2fa jwt tva">
+        <h2>UtilisateurController</h2>
+        <p class="desc">Inscription client/garage/superadmin, login JWT, 2FA, profil utilisateur, calcul TVA.</p>
+        <div class="chips"><span class="chip">Auth</span><span class="chip">JWT</span><span class="chip">2FA</span></div>
+        <ul>
+          <li>POST /api/v1/users/inscrire_client</li>
+          <li>POST /api/v1/users/inscrire-garage</li>
+          <li>POST /api/v1/users/ajouter_superadmin</li>
+          <li>POST /api/v1/users/login</li>
+          <li>GET /api/v1/users/connecter</li>
+          <li>POST /api/v1/users/get_utilisateur</li>
+          <li>POST /api/v1/users/activer_2fa</li>
+          <li>POST /api/v1/users/desactiver_2fa</li>
+          <li>POST /api/v1/users/verify_2fa</li>
+          <li>POST /api/v1/users/calcul_tva</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="valeur reseau social garage qrcode">
+        <h2>ValeurController</h2>
+        <p class="desc">CRUD des valeurs sociales d un garage (handle reseau + qrcode).</p>
+        <div class="chips"><span class="chip">Social</span></div>
+        <ul>
+          <li>GET /api/v1/get_valeurs</li>
+          <li>GET /api/v1/get_valeurs_by_garage/{idGarage}</li>
+          <li>GET /api/v1/get_valeurs_by_reseau/{idReseau}</li>
+          <li>GET /api/v1/get_valeur/{id}</li>
+          <li>POST /api/v1/new_valeur</li>
+          <li>POST /api/v1/edit_valeur/{id}</li>
+          <li>DELETE /api/v1/delete_valeur/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="vehicule client marque modele immatriculation">
+        <h2>VehiculeController</h2>
+        <p class="desc">Gestion des vehicules client, selection marque/modele, CRUD et routes alias.</p>
+        <div class="chips"><span class="chip">Vehicule</span></div>
+        <ul>
+          <li>GET /api/v1/get_vehicules</li>
+          <li>GET /api/v1/get_vehicule/{id}</li>
+          <li>GET /api/v1/choisir_marque</li>
+          <li>GET /api/v1/choisir_modele/{id}</li>
+          <li>POST /api/v1/client/add_vehicule</li>
+          <li>DELETE /api/v1/client/delete_vehicule/{id}</li>
+          <li>GET /api/v1/client/vehicules/{id}</li>
+          <li>PATCH /api/v1/client/update_vehicule/{id}</li>
+          <li>POST /api/v1/new_vehicule</li>
+          <li>POST /api/v1/edit_vehicule/{id}</li>
+          <li>DELETE /api/v1/delete_vehicule/{id}</li>
+        </ul>
+      </article>
+
+      <article class="card" data-search="ville garages localisation code postal insee">
+        <h2>VilleController</h2>
+        <p class="desc">CRUD des villes et recuperation des garages par ville.</p>
+        <div class="chips"><span class="chip">Geo</span></div>
+        <ul>
+          <li>GET /api/v1/get_villes</li>
+          <li>GET /api/v1/get_ville/{id}</li>
+          <li>GET /api/v1/get_garages_by_ville/{id}</li>
+          <li>POST /api/v1/new_ville</li>
+          <li>POST /api/v1/edit_ville/{id}</li>
+          <li>DELETE /api/v1/delete_ville/{id}</li>
+        </ul>
+      </article>
+    </div>
+
+    <section class="usage">
+      <h3>Comment utiliser ces routes dans React</h3>
+      <p>1) Definis une base URL unique. 2) Centralise les appels API. 3) Ajoute le token JWT quand necessaire.</p>
+      <pre><code>// src/api/client.js
+const API_BASE = "http://localhost:8000";
+
+export async function apiFetch(path, { method = "GET", body, token } = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || data.error || `HTTP ${res.status}`);
+  }
+  return data;
+}</code></pre>
+
+      <pre><code>// Exemple login + recuperation vehicules client
+import { apiFetch } from "./api/client";
+
+export async function login(emailUtilisateur, mdpUtilisateur) {
+  return apiFetch("/api/v1/users/login", {
+    method: "POST",
+    body: { emailUtilisateur, mdpUtilisateur }
+  });
+}
+
+export async function getVehiculesClient(idClient, token) {
+  return apiFetch(`/api/v1/client/vehicules/${idClient}`, { token });
+}</code></pre>
+
+      <pre><code>// Exemple dans un composant React
+import { useEffect, useState } from "react";
+import { getVehiculesClient } from "./services/vehicules";
+
+export default function MesVehicules({ idClient, token }) {
+  const [items, setItems] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    getVehiculesClient(idClient, token)
+      .then(setItems)
+      .catch((e) => setError(e.message));
+  }, [idClient, token]);
+
+  if (error) return <p>Erreur: {error}</p>;
+  return <ul>{items.map(v => <li key={v.id_vehicule}>{v.immatriculation}</li>)}</ul>;
+}</code></pre>
+
+      <p class="note">
+        Conseils front React: garde un fichier service par domaine (users, vehicules, rdv...), gere les erreurs de facon uniforme, et stocke le token JWT de maniere sure (ex: memory state + refresh strategy).
+      </p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  Documentation generee pour MecanoLib - controllers Symfony -> utilisation frontend React.
+</footer>
+
+<script>
+  const input = document.getElementById("q");
+  const cards = Array.from(document.querySelectorAll(".card"));
+
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    cards.forEach((card) => {
+      const text = (card.dataset.search + " " + card.innerText).toLowerCase();
+      card.classList.toggle("hidden", q && !text.includes(q));
+    });
+  });
+</script>
+</body>
+</html>

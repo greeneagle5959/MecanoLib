@@ -18,12 +18,12 @@ class Modele
     #[ORM\Column(name: 'nom_modele', type: 'string', length: 50, nullable: false)]
     private string $nomModele;
 
-    #[ORM\OneToMany(mappedBy: 'modele', targetEntity: Marque::class)]
-    private Collection $marques;
+    #[ORM\ManyToOne(targetEntity: Marque::class, inversedBy: 'modeles')]
+    #[ORM\JoinColumn(name: 'id_marque', referencedColumnName: 'id_marque', nullable: false)]
+    private ?Marque $marque = null;
 
     public function __construct()
     {
-        $this->marques = new ArrayCollection();
     }
 
     public function getIdModele(): int
@@ -43,28 +43,33 @@ class Modele
         return $this;
     }
 
-/** @return Collection<int, Marque> */
-    public function getMarques(): Collection
+    public function getMarque(): ?Marque
     {
-        return $this->marques;
+        return $this->marque;
     }
 
-    public function addMarque(Marque $marque): static
+    public function setMarque(?Marque $marque): static
     {
-        if (!$this->marques->contains($marque)) {
-            $this->marques->add($marque);
-            $marque->setModele($this);
-        }
+        $this->marque = $marque;
 
         return $this;
     }
 
+/** @return Collection<int, Marque> */
+    public function getMarques(): Collection
+    {
+        return new ArrayCollection($this->marque ? [$this->marque] : []);
+    }
+
+    public function addMarque(Marque $marque): static
+    {
+        return $this->setMarque($marque);
+    }
+
     public function removeMarque(Marque $marque): static
     {
-        if ($this->marques->removeElement($marque)) {
-            if ($marque->getModele() === $this) {
-                $marque->setModele(null);
-            }
+        if ($this->marque === $marque) {
+            $this->marque = null;
         }
 
         return $this;

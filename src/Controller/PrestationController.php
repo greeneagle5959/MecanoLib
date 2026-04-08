@@ -22,7 +22,14 @@ class PrestationController extends AbstractController
         $prestations = $prestationRepository->findAll();
 
         $nomsPrestations = array_map(
-            static fn (Prestation $prestation): array => ['nomprestation' => $prestation->getNomPrestation()],
+            static fn (Prestation $prestation): array => [
+                'id_prestation' => $prestation->getIdPrestation(),
+                'nom_prestation' => $prestation->getNomPrestation(),
+                'categorie' => $prestation->getCategorie() ? [
+                    'id_categorie' => $prestation->getCategorie()->getIdCategorie(),
+                    'nom_categorie' => $prestation->getCategorie()->getNomCategorie(),
+                ] : null,
+            ],
             $prestations
         );
 
@@ -35,35 +42,47 @@ class PrestationController extends AbstractController
         $prestations = $prestationRepository->findBy(['categorie' => $idCategorie]);
 
         $nomsPrestations = array_map(
-            static fn (Prestation $prestation): array => ['nomprestation' => $prestation->getNomPrestation()],
+            static fn (Prestation $prestation): array => [
+                'id_prestation' => $prestation->getIdPrestation(),
+                'nom_prestation' => $prestation->getNomPrestation(),
+            ],
             $prestations
         );
 
         return $this->json($nomsPrestations);
     }
-    #[Route('/api/v1/get_prestations_by_garage/{idGarage}', name: 'api_get_prestations_by_garage', methods: ['GET'])]
-    public function prestationsByGarage(int $idGarage, EntityManagerInterface $em): JsonResponse
-    {
-        // Vérifier que le garage existe
-        $garage = $em->getRepository(Garage::class)->find($idGarage);
-        if (!$garage) {
-            return $this->json(['message' => 'Garage introuvable.'], JsonResponse::HTTP_NOT_FOUND);
-        }
-
-        // Récupérer les prestations liées au garage via la table proposer
-        $qb = $em->createQueryBuilder();
-        $qb->select('p.idPrestation, p.nomPrestation, p.descriptionPrestation, p.dureePrestation, c.idCategorie, c.nomCategorie')
-        ->from('App\Entity\Prestation', 'p')
-        ->innerJoin('App\Entity\Proposer', 'pr', 'WITH', 'pr.prestation = p.idPrestation')
-        ->leftJoin('p.categorie', 'c')
-        ->where('pr.garage = :garage')
-        ->setParameter('garage', $garage);
-
-        $prestations = $qb->getQuery()->getArrayResult();
-
-        return $this->json($prestations);
+    // méthode pour récupérer les prestations d'un garage
+#[Route('/api/v1/get_prestations_by_garage/{idGarage}', name: 'api_get_prestations_by_garage', methods: ['GET'])]
+public function prestationsByGarage(int $idGarage, EntityManagerInterface $em): JsonResponse
+{
+    $garage = $em->getRepository(Garage::class)->find($idGarage);
+    if (!$garage) {
+        return $this->json(['message' => 'Garage introuvable.'], JsonResponse::HTTP_NOT_FOUND);
     }
 
+    // Récupérer via la table Proposer (qui contient le prix)
+    $propositions = $em->getRepository(Proposer::class)->findBy(['garage' => $garage]);
+
+    $prestations = [];
+    foreach ($propositions as $proposition) {
+        $prestation = $proposition->getPrestation();
+        $categorie = $prestation->getCategorie();
+
+        $prestations[] = [
+            'id_prestation' => $prestation->getIdPrestation(),
+            'nom_prestation' => $prestation->getNomPrestation(),
+            'prix' => $proposition->getPrix(),
+            'idCategorie' => $categorie ? $categorie->getIdCategorie() : null,
+            'categorie' => $categorie ? [
+                'id_categorie' => $categorie->getIdCategorie(),
+                'nom_categorie' => $categorie->getNomCategorie(),
+            ] : null,
+        ];
+    }
+
+    return $this->json($prestations);
+}
+// méthode pour récupérer les détails d'une prestation
     #[Route('/api/v1/get_prestation/{id}', name: 'app_prestation_show', methods: ['GET'])]
     public function show(int $id, PrestationRepository $prestationRepository): JsonResponse
     {
@@ -85,7 +104,7 @@ class PrestationController extends AbstractController
 
         return $this->json($nomprestation);
     }
-
+// méthode pour ajouter une prestation
     #[Route('/api/v1/new_prestation', name: 'app_prestation_new', methods: ['POST'])]
     public function newPrestation(
         Request $request,
@@ -126,15 +145,22 @@ class PrestationController extends AbstractController
 
         ], JsonResponse::HTTP_CREATED);
     }
-
+// méthode pour modifier une prestation
     #[Route('/api/v1/edit_prestation/{id}', name: 'app_prestation_edit', methods: ['POST'], requirements: ['id' => '\\d+'])]
+    #[Route('/api/v1/prestations/{id}', name: 'app_prestation_edit_rest', methods: ['PUT', 'PATCH'], requirements: ['id' => '\\d+'])]
     public function edit(
+        int $id,
         Request $request,
-        Prestation $prestation,
+        PrestationRepository $prestationRepository,
         EntityManagerInterface $entityManager,
         CategorieRepository $categorieRepository
     ): JsonResponse
     {
+        $prestation = $prestationRepository->find($id);
+        if (!$prestation) {
+            return $this->json(['message' => 'Prestation introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
@@ -183,16 +209,51 @@ class PrestationController extends AbstractController
 
         return $this->json([
             'message' => 'La prestation a ete modifiee avec succes.',
+            'id_prestation' => $prestation->getIdPrestation(),
+            'nom_prestation' => $prestation->getNomPrestation(),
         ]);
     }
-// supprimer une prestation
+// méthode pour supprimer une prestation et ses liaisons
     #[Route('/api/v1/delete_prestation/{id}', name: 'app_prestation_delete', methods: ['DELETE'], requirements: ['id' => '\\d+'])]
-    public function delete(Prestation $prestation, EntityManagerInterface $entityManager): JsonResponse
+    #[Route('/api/v1/prestations/{id}', name: 'app_prestation_delete_rest', methods: ['DELETE'], requirements: ['id' => '\\d+'])]
+    public function delete(int $id, PrestationRepository $prestationRepository, EntityManagerInterface $entityManager): JsonResponse
     {
-        $entityManager->remove($prestation);
-        $entityManager->flush();
+        $prestation = $prestationRepository->find($id);
+        if (!$prestation) {
+            return $this->json(['message' => 'Prestation introuvable.'], JsonResponse::HTTP_NOT_FOUND);
+        }
 
-        return $this->json(['message' => 'La prestation a ete supprime avec succes.']);
+        $connection = $entityManager->getConnection();
+        $connection->beginTransaction();
+
+        try {
+            // Evite de charger les entites liees (mapping potentiellement desynchronise avec la DB).
+            $entityManager->createQuery('DELETE FROM App\\Entity\\Proposer p WHERE p.prestation = :prestation')
+                ->setParameter('prestation', $prestation)
+                ->execute();
+
+            // Certains environnements n'ont pas encore la table `lier`.
+            if ($connection->createSchemaManager()->tablesExist(['lier'])) {
+                $entityManager->createQuery('DELETE FROM App\\Entity\\Lier l WHERE l.prestation = :prestation')
+                    ->setParameter('prestation', $prestation)
+                    ->execute();
+            }
+
+            $entityManager->remove($prestation);
+            $entityManager->flush();
+            $connection->commit();
+
+            return $this->json(['message' => 'La prestation a ete supprimee avec succes.']);
+        } catch (\Throwable $e) {
+            if ($connection->isTransactionActive()) {
+                $connection->rollBack();
+            }
+
+            return $this->json([
+                'message' => 'Erreur serveur lors de la suppression de la prestation.',
+                'detail' => $e->getMessage(),
+            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
     // methode pour que le garage rajoute ca voiture
     #[Route('/api/v1/garage/{idGarage}/add_prestations', name: 'api_garage_add_prestations', methods: ['POST'])]

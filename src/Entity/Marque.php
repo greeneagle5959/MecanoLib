@@ -18,15 +18,15 @@ class Marque
     #[ORM\Column(name: 'nom_marque', type: 'string', length: 50, nullable: false)]
     private string $nomMarque;
 
-    #[ORM\ManyToOne(targetEntity: Modele::class, inversedBy: 'marques')]
-    #[ORM\JoinColumn(name: 'id_modele', referencedColumnName: 'id_modele', nullable: false)]
-    private ?Modele $modele = null;
+    #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Modele::class)]
+    private Collection $modeles;
 
     #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Vehicule::class)]
     private Collection $vehicules;
 
     public function __construct()
     {
+        $this->modeles = new ArrayCollection();
         $this->vehicules = new ArrayCollection();
     }
 
@@ -47,14 +47,51 @@ class Marque
         return $this;
     }
 
+    /** @return Collection<int, Modele> */
+    public function getModeles(): Collection
+    {
+        return $this->modeles;
+    }
+
+    public function addModele(Modele $modele): static
+    {
+        if (!$this->modeles->contains($modele)) {
+            $this->modeles->add($modele);
+            $modele->setMarque($this);
+        }
+
+        return $this;
+    }
+
+    public function removeModele(Modele $modele): static
+    {
+        if ($this->modeles->removeElement($modele)) {
+            if ($modele->getMarque() === $this) {
+                $modele->setMarque(null);
+            }
+        }
+
+        return $this;
+    }
+
     public function getModele(): ?Modele
     {
-        return $this->modele;
+        $modele = $this->modeles->first();
+
+        return $modele instanceof Modele ? $modele : null;
     }
 
     public function setModele(?Modele $modele): static
     {
-        $this->modele = $modele;
+        foreach ($this->modeles->toArray() as $existingModele) {
+            if ($modele === null || $existingModele !== $modele) {
+                $this->removeModele($existingModele);
+            }
+        }
+
+        if ($modele !== null) {
+            $this->addModele($modele);
+        }
 
         return $this;
     }
