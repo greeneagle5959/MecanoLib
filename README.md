@@ -87,8 +87,8 @@ Ce projet implémente un système d’authentification sécurisé basé sur :
               # See the configuration reference at https://symfony.com/bundles/SchebTwoFactorBundle/6.x/configuration.html
               google:
                   enabled: true
-                  server_name: le nom de ton dossier ex(MecanoLib)
-                  issuer: le nom de ton dossier ex(MecanoLib)
+                  server_name: MecanoLib
+                  issuer: MecanoLib
                   
 
   ## Fonctionnement global:
