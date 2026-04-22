@@ -25,6 +25,27 @@ use App\Entity\Utilisateur;
 #[Route('', name: '/api_garage_')]
 final class GarageController extends AbstractController
 {
+    private function parseClientDateTime(?string $value): ?\DateTimeImmutable
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $tz = new \DateTimeZone('Europe/Paris');
+
+        try {
+            $dt = new \DateTimeImmutable($value, $tz);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $dt->setTimezone($tz);
+    }
     //  On recupere l'EntityManager une fois pour tout le controleur.
     public function __construct(private readonly EntityManagerInterface $entityManager)
     {
@@ -410,10 +431,9 @@ final class GarageController extends AbstractController
         }
 
         // Parse dates
-        try {
-            $dateDebut = new \DateTime($payload['dateDebut']);
-            $dateFin = new \DateTime($payload['dateFin']);
-        } catch (\Exception $e) {
+        $dateDebut = $this->parseClientDateTime(isset($payload['dateDebut']) ? (string) $payload['dateDebut'] : null);
+        $dateFin = $this->parseClientDateTime(isset($payload['dateFin']) ? (string) $payload['dateFin'] : null);
+        if ($dateDebut === null || $dateFin === null) {
             return $this->json(['error' => 'Format de date invalide'], Response::HTTP_BAD_REQUEST);
         }
 
