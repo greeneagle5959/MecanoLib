@@ -14,6 +14,10 @@ class Associer
     private ?Jour $jour = null;
 
     #[ORM\Id]
+    #[ORM\ManyToOne(targetEntity: Garage::class)]
+    #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
+    private ?Garage $garage = null;
+
     #[ORM\ManyToOne(targetEntity: Horaire::class, inversedBy: 'associers')]
     #[ORM\JoinColumn(name: 'id_horaire', referencedColumnName: 'id_horaire', nullable: false)]
     private ?Horaire $horaire = null;
@@ -26,7 +30,6 @@ class Associer
     public function setJour(?Jour $jour): static
     {
         $this->jour = $jour;
-
         return $this;
     }
 
@@ -38,8 +41,18 @@ class Associer
     public function setHoraire(?Horaire $horaire): static
     {
         $this->horaire = $horaire;
-
         return $this;
     }
 
+    public function getGarage(): ?Garage
+    {
+        return $this->garage;
+    }
+
+    public function setGarage(?Garage $garage): static
+    {
+        $this->garage = $garage;
+
+        return $this;
+    }
 }

@@ -21,9 +21,13 @@ class Marque
     #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Modele::class)]
     private Collection $modeles;
 
+    #[ORM\OneToMany(mappedBy: 'marque', targetEntity: Vehicule::class)]
+    private Collection $vehicules;
+
     public function __construct()
     {
         $this->modeles = new ArrayCollection();
+        $this->vehicules = new ArrayCollection();
     }
 
     public function getIdMarque(): ?int
@@ -66,5 +70,10 @@ class Marque
         }
 
         return $this;
+    }
+
+    public function getVehicules(): Collection
+    {
+        return $this->vehicules;
     }
 }

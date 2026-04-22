@@ -37,4 +37,23 @@ class RendezVousRepository extends ServiceEntityRepository
             ->getQuery()
             ->getArrayResult(); 
     }
+    // pour gerer la double reservation 
+   // Vérifie si un créneau est déjà pris pour un garage
+    /*public function existeCreneauPris(
+        int $garageId,
+        \DateTimeInterface $dateDebut,
+        \DateTimeInterface $dateFin
+    ): bool {
+        $count = $this->createQueryBuilder('r')
+            ->select('COUNT(r.idRdv)')
+            ->andWhere('r.garage = :garage')
+            ->andWhere('(r.dateDebut < :dateFin AND r.dateFin > :dateDebut)')
+            ->setParameter('garage', $garageId)
+            ->setParameter('dateDebut', $dateDebut)
+            ->setParameter('dateFin', $dateFin)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }*/
 }

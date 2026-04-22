@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\RendezVous;
 use App\Entity\Associer;
 use App\Entity\Categorie;
 use App\Entity\Garage;
@@ -10,6 +9,7 @@ use App\Entity\Historique;
 use App\Entity\Horaire;
 use App\Entity\Jour;
 use App\Entity\Prestation;
+use App\Entity\RendezVous;
 use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
 use App\Entity\Ville;
@@ -20,8 +20,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Entity\Utilisateur;
 
-
+#[Route('', name: '/api_garage_')]
 final class GarageController extends AbstractController
 {
     //  On recupere l'EntityManager une fois pour tout le controleur.
@@ -32,7 +33,7 @@ final class GarageController extends AbstractController
 
 
     // Ici on renvoie le profil du garage demande.
-    #[Route('api/v1/profil', name: 'profil_show', methods: ['GET'])]
+    #[Route('/api/v1/profil', name: 'profil_show', methods: ['GET'])]
     public function afficherProfil(Request $request): JsonResponse
     {
         $garage = $this->resoudreGarage($request);
@@ -46,7 +47,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on met a jour les infos de base du profil garage.
-    #[Route('api/v1/profil', name: 'profil_update', methods: ['PUT', 'PATCH'])]
+    #[Route('/api/v1/profil', name: 'profil_update', methods: ['PUT', 'PATCH'])]
     public function mettreAJourProfil(Request $request): JsonResponse
     {
         $payload = $this->recupererPayload($request);
@@ -81,7 +82,7 @@ final class GarageController extends AbstractController
         }
 
         if (isset($payload['villeId'])) {
-            $ville = $this->entityManager->getRepository(\api\Entity\Ville::class)->find((int) $payload['villeId']);
+            $ville = $this->entityManager->getRepository(Ville::class)->find((int) $payload['villeId']);
             if ($ville === null) {
                 return $this->json(['error' => 'Ville introuvable'], Response::HTTP_BAD_REQUEST);
             }
@@ -97,7 +98,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on supprime le profil garage si les contraintes le permettent.
-    #[Route('api/v1/profil', name: 'profil_delete', methods: ['DELETE'])]
+    #[Route('/api/v1/profil', name: 'profil_delete', methods: ['DELETE'])]
     public function supprimerProfil(Request $request): JsonResponse
     {
         $payload = $this->recupererPayload($request);
@@ -122,7 +123,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on enregistre les horaires d'ouverture et de fermeture du garage.
-    #[Route('/api/v1/horaires/ouvertures-fermetures', name: 'horaires_ouvertures-fermetures', methods: ['PATCH'])]
+    #[Route('/api/v1/horaires/ouvertures_fermetures', name: 'horaires_ouvertures_fermetures', methods: ['PATCH'])]
     public function mettreAJourOuverturesFermetures(Request $request): JsonResponse
     {
         $payload = $this->recupererPayload($request);
@@ -130,25 +131,11 @@ final class GarageController extends AbstractController
         if ($garage === null) {
             return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
         }
-//        on verifie que les champs horaires sont tous presents dans le payload.
+        // on verifie que les champs horaires sont tous presents dans le payload.
         foreach (['hreOuvreMatin', 'hreFermeMatin', 'hreOuvreSoir', 'hreFermeSoir'] as $field) {
             if (!isset($payload[$field])) {
                 return $this->json(['error' => sprintf('Champ requis: %s (format HH:MM)', $field)], Response::HTTP_BAD_REQUEST);
             }
-        }
-//        on cherche un horaire existant pour ce garage, sinon on en cree un nouveau.
-        $horaire = null;
-        if (isset($payload['horaireId'])) {
-            $horaire = $this->entityManager->getRepository(Horaire::class)->find((int) $payload['horaireId']);
-            if ($horaire !== null && $horaire->getGarage()?->getIdGarage() !== $garage->getIdGarage()) {
-                return $this->json(['error' => 'Horaire introuvable pour ce garage'], Response::HTTP_NOT_FOUND);
-            }
-        }
-//        si aucun horaire trouve, on en cree un nouveau et on l'associe au garage.
-        if ($horaire === null) {
-            $horaire = new Horaire();
-            $horaire->setGarage($garage);
-            $this->entityManager->persist($horaire);
         }
 
         $ouvreMatin = $this->parserHeure((string) $payload['hreOuvreMatin']);
@@ -160,11 +147,41 @@ final class GarageController extends AbstractController
             return $this->json(['error' => 'Format heure invalide. Utiliser HH:MM'], Response::HTTP_BAD_REQUEST);
         }
 
-        $horaire
-            ->setHreOuvreMatin($ouvreMatin)
-            ->setHreFermeMatin($fermeMatin)
-            ->setHreOuvreSoir($ouvreSoir)
-            ->setHreFermeSoir($fermeSoir);
+        // Template global: on le reutilise si une ligne identique existe, sinon on cree.
+        $horaireRepository = $this->entityManager->getRepository(Horaire::class);
+        $horaire = method_exists($horaireRepository, 'findExistingHoraire')
+            ? $horaireRepository->findExistingHoraire($ouvreMatin, $fermeMatin, $ouvreSoir, $fermeSoir)
+            : null;
+
+        if ($horaire === null) {
+            $horaire = new Horaire();
+            $horaire
+                ->setHreOuvreMatin($ouvreMatin)
+                ->setHreFermeMatin($fermeMatin)
+                ->setHreOuvreSoir($ouvreSoir)
+                ->setHreFermeSoir($fermeSoir);
+            $this->entityManager->persist($horaire);
+            $this->entityManager->flush();
+        }
+
+        // Par defaut, on applique cet horaire sur les 7 jours pour ce garage.
+        $jours = $this->entityManager->getRepository(Jour::class)->findBy([], ['idJour' => 'ASC']);
+        foreach ($jours as $jour) {
+            $associer = $this->entityManager->getRepository(Associer::class)->findOneBy([
+                'garage' => $garage,
+                'jour' => $jour,
+            ]);
+            if ($associer) {
+                $associer->setHoraire($horaire);
+                continue;
+            }
+
+            $associer = new Associer();
+            $associer->setGarage($garage);
+            $associer->setJour($jour);
+            $associer->setHoraire($horaire);
+            $this->entityManager->persist($associer);
+        }
 
         $this->entityManager->flush();
 
@@ -175,46 +192,93 @@ final class GarageController extends AbstractController
     }
 
     // Ici on branche les jours de la semaine avec les bons horaires.
-    #[Route('api/v1/planning/semaine', name: 'planning_semaine_update', methods: ['PUT', 'PATCH'])]
-    public function mettreAJourPlanningSemaine(Request $request): JsonResponse
-    { //       on recupere le garage et le planning du payload, puis on verifie que tout est bien forme.
-        $payload = $this->recupererPayload($request);
-        $garage = $this->resoudreGarage($request, $payload);
+   #[Route('/api/v1/planning/semaine', name: 'planning_semaine_show', methods: ['GET'])]
+    public function afficherPlanningSemaine(Request $request): JsonResponse
+    {
+        $garage = $this->resoudreGarage($request);
         if ($garage === null) {
             return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
         }
-//       on verifie que le planning est present et bien forme dans le payload.
+
+        $jours = $this->entityManager->getRepository(Jour::class)->findBy([], ['idJour' => 'ASC']);
+        $associers = $this->entityManager->getRepository(Associer::class)->findBy(['garage' => $garage]);
+        $horairesByJour = [];
+        foreach ($associers as $associer) {
+            $jourId = $associer->getJour()?->getIdJour();
+            if ($jourId === null) {
+                continue;
+            }
+            $horairesByJour[$jourId] = $associer->getHoraire();
+        }
+
+        return $this->json([
+            'garage_id' => $garage->getIdGarage(),
+            'jours' => array_map(
+                function (Jour $jour) use ($horairesByJour) {
+                    $jourId = $jour->getIdJour();
+                    $horaire = $horairesByJour[$jourId] ?? null;
+
+                    return [
+                        'jourId' => $jourId,
+                        'libJour' => $jour->getLibJour(),
+                        'isActive' => $horaire !== null,
+                        'horaire' => $horaire !== null ? $this->serialiserHoraire($horaire) : null,
+                    ];
+                },
+                $jours
+            ),
+        ]);
+    }
+
+
+    #[Route('/api/v1/planning/semaine', name: 'planning_semaine_update', methods: ['PUT', 'PATCH'])]
+    public function mettreAJourPlanningSemaine(Request $request): JsonResponse
+    {
+        $payload = $this->recupererPayload($request);
+        $garage = $this->resoudreGarage($request, $payload);
+
+        if ($garage === null) {
+            return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
         $planning = $payload['planning'] ?? null;
         if (!is_array($planning)) {
             return $this->json([
                 'error' => 'Le payload doit contenir planning: [{jourId, horaireId}]',
             ], Response::HTTP_BAD_REQUEST);
         }
-//       on boucle sur chaque entree du planning pour verifier que les jours et horaires existent et sont associes.
+
         foreach ($planning as $item) {
             if (!is_array($item) || !isset($item['jourId'], $item['horaireId'])) {
-                return $this->json(['error' => 'Chaque entree doit avoir jourId et horaireId'], Response::HTTP_BAD_REQUEST);
+                return $this->json([
+                    'error' => 'Chaque entree doit avoir jourId et horaireId'
+                ], Response::HTTP_BAD_REQUEST);
             }
-//         on verifie que le jour et l'horaire existent en base, et que l'horaire est bien associe a ce garage.
+
             $jour = $this->entityManager->getRepository(Jour::class)->find((int) $item['jourId']);
             $horaire = $this->entityManager->getRepository(Horaire::class)->find((int) $item['horaireId']);
+
             if ($jour === null || $horaire === null) {
                 return $this->json(['error' => 'Jour ou horaire introuvable'], Response::HTTP_BAD_REQUEST);
-            } //         on verifie que l'horaire apiartient bien au garage avant de l'associer au jour.
-            if ($horaire->getGarage()?->getIdGarage() !== $garage->getIdGarage()) {
-                return $this->json(['error' => 'Horaire non associe a ce garage'], Response::HTTP_BAD_REQUEST);
             }
-//         on vire les anciennes associations du jour avant d'en creer une nouvelle.
-            foreach ($jour->getAssociers() as $associer) {
-                $this->entityManager->remove($associer);
+
+            $existingAssocier = $this->entityManager->getRepository(Associer::class)->findOneBy([
+                'garage' => $garage,
+                'jour' => $jour,
+            ]);
+
+            if ($existingAssocier) {
+                $existingAssocier->setHoraire($horaire);
+                continue;
             }
 
             $associer = new Associer();
+            $associer->setGarage($garage);
             $associer->setJour($jour);
             $associer->setHoraire($horaire);
             $this->entityManager->persist($associer);
         }
-//       on flush une fois a la fin pour optimiser les requetes.
+
         $this->entityManager->flush();
 
         return $this->json([
@@ -223,8 +287,9 @@ final class GarageController extends AbstractController
         ]);
     }
 
+
     // Ici on ajoute une nouvelle prestation au garage.
-    #[Route('api/v1/prestations', name: 'prestations_add', methods: ['POST'])]
+    #[Route('/api/v1/prestations', name: 'prestations_add', methods: ['POST'])]
     public function ajouterPrestation(Request $request): JsonResponse
     {
         $payload = $this->recupererPayload($request);
@@ -267,7 +332,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on vire une prestation du garage, et de la base si plus utilisee.
-    #[Route('api/v1/prestations/{id}', name: 'prestations_delete', methods: ['DELETE'])]
+    #[Route('/api/v1/prestations/{id}', name: 'prestations_delete', methods: ['DELETE'])]
     public function supprimerPrestation(int $id, Request $request): JsonResponse
     { 
         $payload = $this->recupererPayload($request);
@@ -301,7 +366,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on liste tous les rendez-vous du garage, tries par date.
-    #[Route('api/v1/rdv', name: 'rdv_list', methods: ['GET'])]
+    #[Route('/api/v1/rdv', name: 'rdv_list', methods: ['GET'])]
     public function listerRdv(Request $request): JsonResponse
     { //       
         $garage = $this->resoudreGarage($request);
@@ -320,8 +385,74 @@ final class GarageController extends AbstractController
         ]);
     }
 
+    // Créer un nouveau rendez-vous
+    #[Route('/api/v1/rdv', name: 'rdv_create', methods: ['POST'])]
+    public function creerRdv(Request $request): JsonResponse
+    {
+        $garage = $this->resoudreGarage($request);
+        if ($garage === null) {
+            return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
+        $payload = $this->recupererPayload($request);
+
+        // Validate required fields
+        if (!isset($payload['vehiculeId'], $payload['dateDebut'], $payload['dateFin'])) {
+            return $this->json([
+                'error' => 'Required fields: vehiculeId, dateDebut, dateFin'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Get vehicule and verify it belongs to the garage
+        $vehicule = $this->entityManager->getRepository(Vehicule::class)->find((int) $payload['vehiculeId']);
+        if ($vehicule === null) {
+            return $this->json(['error' => 'Véhicule introuvable'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Parse dates
+        try {
+            $dateDebut = new \DateTime($payload['dateDebut']);
+            $dateFin = new \DateTime($payload['dateFin']);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Format de date invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($dateFin <= $dateDebut) {
+            return $this->json(['error' => 'La date de fin doit être après la date de début'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Get status (default to "En attente")
+        $defaultStatus = $this->entityManager->getRepository(StatusRdv::class)->findOneBy(['libStatusRdv' => 'En attente']);
+        $status = $defaultStatus;
+        if (isset($payload['statusId'])) {
+            $status = $this->entityManager->getRepository(StatusRdv::class)->find((int) $payload['statusId']);
+            if ($status === null) {
+                return $this->json(['error' => 'StatusRdv introuvable'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        // Create RDV
+        $rdv = new RendezVous();
+        $rdv->setDateDebut($dateDebut);
+        $rdv->setDateFin($dateFin);
+        $rdv->setMotifRefus($payload['motifRefus'] ?? '');
+        $rdv->setCommantaireClient($payload['commentaire'] ?? '');
+        $rdv->setVehicule($vehicule);
+        $rdv->setGarage($garage);
+        $rdv->setStatusRdv($status);
+
+        $this->entityManager->persist($rdv);
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Rendez-vous créé avec succès',
+            'rdv' => $this->serialiserRdv($rdv)
+        ], Response::HTTP_CREATED);
+    }
+
     // Ici on affiche le detail complet d'un rendez-vous.
-    #[Route('api/v1/rdv/{id}', name: 'rdv_show', methods: ['GET'])]
+    #[Route('/api/v1/rdv/{id}', name: 'rdv_show', methods: ['GET'])]
     public function afficherRdv(int $id): JsonResponse
     { //       on recupere le rdv demande, sinon on retourne une erreur.
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -344,7 +475,7 @@ final class GarageController extends AbstractController
     }
 
     // Ici on recupere juste les prestations liees a un rendez-vous.
-    #[Route('api/v1/rdv/{id}/prestations', name: 'rdv_prestations_show', methods: ['GET'])]
+    #[Route('/api/v1/rdv/{id}/prestations', name: 'rdv_prestations_show', methods: ['GET'])]
     public function afficherPrestationsRdv(int $id): JsonResponse
     { //       on recupere le rdv demande, sinon on retourne une erreur.
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -398,29 +529,9 @@ final class GarageController extends AbstractController
             'rdv' => $this->serialiserRdv($rdv),
         ]);
     }
-    // Afficher le status de rdv 
-   
-   #[Route('/api/v1/rdv/{id}/status', name: 'rdv_status_show', methods: ['GET'])]
-    public function afficherStatusRdv(int $id): JsonResponse
-    {
-        // On récupère le rendez-vous
-        $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
-
-        if ($rdv === null) {
-            return $this->json([
-                'error' => 'Rendez-vous introuvable'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        // On renvoie uniquement le statut
-        return $this->json([
-            'idRdv' => $rdv->getIdRdv(),
-            'status' => $rdv->getStatusRdv()?->getLibStatusRdv() ?? 'En attente',
-        ]);
-    }
 
     // Ici on ajoute le compte-rendu d'intervention dans l'historique client.
-    #[Route('api/v1/rdv/{id}/historique', name: 'rdv_historique_complete', methods: ['POST'])]
+    #[Route('/api/v1/rdv/{id}/historique', name: 'rdv_historique_complete', methods: ['POST'])]
     public function completerHistoriqueClient(int $id, Request $request): JsonResponse
     {
         $rdv = $this->entityManager->getRepository(RendezVous::class)->find($id);
@@ -486,16 +597,39 @@ final class GarageController extends AbstractController
         return $request->request->all();
     }
 
-    //  on retrouve le garage via garageId, sinon on prend le premier.
+    //  on retrouve le garage via garageId explicite, sinon via l'utilisateur connecte.
     private function resoudreGarage(Request $request, array $payload = []): ?Garage
     {
         $garageId = $payload['garageId'] ?? $request->query->get('garageId');
+        $userId = $payload['userId'] ?? $request->query->get('userId');
         $repository = $this->entityManager->getRepository(Garage::class);
+
         if ($garageId !== null) {
             return $repository->find((int) $garageId);
         }
 
-        return $repository->findOneBy([]);
+        if ($userId !== null) {
+            $user = $this->entityManager->getRepository(Utilisateur::class)->find((int) $userId);
+            if ($user !== null) {
+                $garage = $repository->findOneBy(['utilisateur' => $user]);
+                if ($garage !== null) {
+                    return $garage;
+                }
+            }
+        }
+
+        $currentUser = $this->getUser();
+        if ($currentUser instanceof Utilisateur) {
+            $userGarage = $repository->findOneBy(['utilisateur' => $currentUser]);
+            if ($userGarage !== null) {
+                return $userGarage;
+            }
+
+            // Fallback pour les donnees historiques ou l'association utilisateur->garage est manquante.
+            return $repository->findOneBy(['emailGarage' => $currentUser->getEmailUtilisateur()]);
+        }
+
+        return null;
     }
 
     //  on transforme une heure HH:MM en objet DateTime compatible avec Doctrine type "time".
@@ -508,16 +642,17 @@ final class GarageController extends AbstractController
 
 
     //  on formate un horaire pour l'envoyer au front.
-    private function serialiserHoraire(Horaire $horaire): array
+   private function serialiserHoraire(Horaire $horaire): array
     {
         return [
             'idHoraire' => $horaire->getIdHoraire(),
-            'hreOuvreMatin' => $horaire->getHreOuvreMatin()->format('H:i'),
-            'hreFermeMatin' => $horaire->getHreFermeMatin()->format('H:i'),
-            'hreOuvreSoir' => $horaire->getHreOuvreSoir()->format('H:i'),
-            'hreFermeSoir' => $horaire->getHreFermeSoir()->format('H:i'),
+            'hreOuvreMatin' => $horaire->getHreOuvreMatin()?->format('H:i'),
+            'hreFermeMatin' => $horaire->getHreFermeMatin()?->format('H:i'),
+            'hreOuvreSoir' => $horaire->getHreOuvreSoir()?->format('H:i'),
+            'hreFermeSoir' => $horaire->getHreFermeSoir()?->format('H:i'),
         ];
     }
+
 
     //  on formate un garage pour l'envoyer au front.
     private function serialiserGarage(Garage $garage): array
@@ -561,7 +696,7 @@ final class GarageController extends AbstractController
     }
 
     //  route de validation d'un garage par un super admin pour affichage.
-    #[Route('api/v1/garages/{id}/validation', name: 'garage_valider', methods: ['PATCH'])]
+    #[Route('/api/v1/garages/{id}/validation', name: 'garage_valider', methods: ['PATCH'])]
     public function validerGarage(int $id, Request $request): JsonResponse
     {
         if (!$this->isGranted('ROLE_SUPER_ADMIN')) {
@@ -619,7 +754,7 @@ final class GarageController extends AbstractController
         }
     }
     // verification si le garage existe avec le numero siret 
-   #[Route('/api/v1/check_garage/{siret}', name: 'api_check_garage', methods: ['GET'])]
+   #[Route('//api/v1/check_garage/{siret}', name: '/api_check_garage', methods: ['GET'])]
     public function checkGarage(string $siret, GarageRepository $repo): JsonResponse
     {
         $garage = $repo->findOneBy(['siret' => $siret]);
@@ -628,5 +763,83 @@ final class GarageController extends AbstractController
             'exists' => $garage ? true : false
         ]);
     }
-   
+
+    #[Route('//api/v1/garages/search', name: '/api_garages_search', methods: ['GET'])]
+    public function rechercherGarages(Request $request): JsonResponse
+    {
+        $ville = trim((string) $request->query->get('ville', ''));
+        $prestationId = $request->query->get('prestationId');
+        $onlyValidated = filter_var($request->query->get('onlyValidated', '0'), FILTER_VALIDATE_BOOLEAN);
+
+        $qb = $this->entityManager
+            ->getRepository(Garage::class)
+            ->createQueryBuilder('g')
+            ->leftJoin('g.ville', 'v')
+            ->addSelect('v');
+
+        if ($onlyValidated) {
+            $qb
+                ->andWhere('g.isValide = :isValide')
+                ->setParameter('isValide', true);
+        }
+
+        if ($ville !== '') {
+            $normalizedVille = mb_strtolower($ville);
+            $qb
+                ->andWhere('LOWER(v.nomVille) LIKE :ville OR v.codePostal LIKE :codePostal OR LOWER(g.nomGarage) LIKE :garageName OR LOWER(g.adresseGarage) LIKE :garageAddress')
+                ->setParameter('ville', '%' . $normalizedVille . '%')
+                ->setParameter('codePostal', '%' . $ville . '%')
+                ->setParameter('garageName', '%' . $normalizedVille . '%')
+                ->setParameter('garageAddress', '%' . $normalizedVille . '%');
+        }
+
+        if ($prestationId !== null && $prestationId !== '') {
+            $qb
+                ->innerJoin('g.prestations', 'fp')
+                ->andWhere('fp.idPrestation = :prestationId')
+                ->setParameter('prestationId', (int) $prestationId);
+        }
+
+        $garages = $qb
+            ->orderBy('g.nomGarage', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $this->json([
+            'filters' => [
+                'ville' => $ville,
+                'prestationId' => $prestationId !== null && $prestationId !== '' ? (int) $prestationId : null,
+                'onlyValidated' => $onlyValidated,
+            ],
+            'count' => count($garages),
+            'garages' => array_map(fn (Garage $garage) => $this->serialiserGarageRecherche($garage), $garages),
+        ]);
+    }
+
+    private function serialiserGarageRecherche(Garage $garage): array
+    {
+        $ville = $garage->getVille();
+
+        return [
+            'idGarage' => $garage->getIdGarage(),
+            'nomGarage' => $garage->getNomGarage(),
+            'telephoneGarage' => $garage->getTelephoneGarage(),
+            'emailGarage' => $garage->getEmailGarage(),
+            'adresseGarage' => $garage->getAdresseGarage(),
+            'ville' => [
+                'idVille' => $ville?->getIdVille(),
+                'nomVille' => $ville?->getNomVille(),
+                'codePostal' => $ville?->getCodePostal(),
+            ],
+            'prestations' => array_map(
+                static fn (Prestation $prestation) => [
+                    'idPrestation' => $prestation->getIdPrestation(),
+                    'nomPrestation' => $prestation->getNomPrestation(),
+                    'dureePrestation' => $prestation->getDureePrestation(),
+                ],
+                $garage->getPrestations()->toArray()
+            ),
+        ];
+    }
+    
 }

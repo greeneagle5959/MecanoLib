@@ -12,13 +12,15 @@ class Jour
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_jour', type: 'integer', nullable: false)]
-    private int $idJour;
+    #[ORM\Column(name: 'id_jour', type: 'integer')]
+    private ?int $idJour = null;
 
-    #[ORM\Column(name: 'lib_jour', type: 'string', length: 15, nullable: false)]
+    // LUNDI, MARDI, etc (table de référence)
+    #[ORM\Column(name: 'lib_jour', type: 'string', length: 15)]
     private string $libJour;
 
-    #[ORM\OneToMany(mappedBy: 'jour', targetEntity: Associer::class)]
+    // Liaison avec les horaires via Associer
+    #[ORM\OneToMany(mappedBy: 'jour', targetEntity: Associer::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $associers;
 
     public function __construct()
@@ -26,7 +28,7 @@ class Jour
         $this->associers = new ArrayCollection();
     }
 
-    public function getIdJour(): int
+    public function getIdJour(): ?int
     {
         return $this->idJour;
     }
@@ -38,12 +40,11 @@ class Jour
 
     public function setLibJour(string $libJour): static
     {
-        $this->libJour = $libJour;
-
+        $this->libJour = strtoupper($libJour);
         return $this;
     }
 
-/** @return Collection<int, Associer> */
+    /** @return Collection<int, Associer> */
     public function getAssociers(): Collection
     {
         return $this->associers;
@@ -55,7 +56,6 @@ class Jour
             $this->associers->add($associer);
             $associer->setJour($this);
         }
-
         return $this;
     }
 
@@ -66,8 +66,6 @@ class Jour
                 $associer->setJour(null);
             }
         }
-
         return $this;
     }
-
 }

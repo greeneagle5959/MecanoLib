@@ -2,10 +2,8 @@
 
 namespace App\Entity;
 
-use App\Entity\Garage;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use App\Entity\Lier;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -14,34 +12,38 @@ class RendezVous
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(name: 'id_rdv', type: 'integer', nullable: false)]
-    private int $idRdv;
+    #[ORM\Column(name: 'id_rdv', type: 'integer')]
+    private ?int $idRdv = null;
 
-    #[ORM\Column(name: 'date_debut', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'date_debut', type: 'datetime')]
     private \DateTimeInterface $dateDebut;
 
-    #[ORM\Column(name: 'date_fin', type: 'datetime', nullable: false)]
+    #[ORM\Column(name: 'date_fin', type: 'datetime')]
     private \DateTimeInterface $dateFin;
 
-    #[ORM\Column(name: 'motif_refus', type: 'text', nullable: false)]
-    private string $motifRefus;
+    #[ORM\Column(name: 'motif_refus', type: 'text', nullable: true)]
+    private ?string $motifRefus = null;
 
-    #[ORM\Column(name: 'commantaire_client', type: 'text', nullable: false)]
-    private string $commantaireClient;
+    #[ORM\Column(name: 'commantaire_client', type: 'text', nullable: true)]
+    private ?string $commantaireClient = null;
 
-    #[ORM\ManyToOne(targetEntity: Garage::class, inversedBy: 'rendezVousList')]
+    // =========================
+    // 🔥 FIX IMPORTANT ICI
+    // =========================
+
+    #[ORM\ManyToOne(inversedBy: 'rendezVousList')]
     #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
     private ?Garage $garage = null;
 
-    #[ORM\ManyToOne(targetEntity: Vehicule::class, inversedBy: 'rendezVousList')]
+    #[ORM\ManyToOne(inversedBy: 'rendezVousList')]
     #[ORM\JoinColumn(name: 'id_vehicule', referencedColumnName: 'id_vehicule', nullable: false)]
     private ?Vehicule $vehicule = null;
 
-    #[ORM\ManyToOne(targetEntity: StatusRdv::class, inversedBy: 'rendezVousList')]
+    #[ORM\ManyToOne(inversedBy: 'rendezVousList')]
     #[ORM\JoinColumn(name: 'id_status_rdv', referencedColumnName: 'id_status_rdv', nullable: false)]
     private ?StatusRdv $statusRdv = null;
 
-    #[ORM\OneToMany(mappedBy: 'rdv', targetEntity: Lier::class)]
+    #[ORM\OneToMany(mappedBy: 'rdv', targetEntity: Lier::class, cascade: ['persist', 'remove'])]
     private Collection $liers;
 
     #[ORM\OneToMany(mappedBy: 'rdv', targetEntity: Files::class)]
@@ -61,7 +63,7 @@ class RendezVous
         $this->historiques = new ArrayCollection();
     }
 
-    public function getIdRdv(): int
+    public function getIdRdv(): ?int
     {
         return $this->idRdv;
     }
@@ -74,7 +76,6 @@ class RendezVous
     public function setDateDebut(\DateTimeInterface $dateDebut): static
     {
         $this->dateDebut = $dateDebut;
-
         return $this;
     }
 
@@ -86,31 +87,28 @@ class RendezVous
     public function setDateFin(\DateTimeInterface $dateFin): static
     {
         $this->dateFin = $dateFin;
-
         return $this;
     }
 
-    public function getMotifRefus(): string
+    public function getMotifRefus(): ?string
     {
         return $this->motifRefus;
     }
 
-    public function setMotifRefus(string $motifRefus): static
+    public function setMotifRefus(?string $motifRefus): static
     {
         $this->motifRefus = $motifRefus;
-
         return $this;
     }
 
-    public function getCommantaireClient(): string
+    public function getCommantaireClient(): ?string
     {
         return $this->commantaireClient;
     }
 
-    public function setCommantaireClient(string $commantaireClient): static
+    public function setCommantaireClient(?string $commantaireClient): static
     {
         $this->commantaireClient = $commantaireClient;
-
         return $this;
     }
 
@@ -122,7 +120,6 @@ class RendezVous
     public function setGarage(?Garage $garage): static
     {
         $this->garage = $garage;
-
         return $this;
     }
 
@@ -134,7 +131,6 @@ class RendezVous
     public function setVehicule(?Vehicule $vehicule): static
     {
         $this->vehicule = $vehicule;
-
         return $this;
     }
 
@@ -146,116 +142,26 @@ class RendezVous
     public function setStatusRdv(?StatusRdv $statusRdv): static
     {
         $this->statusRdv = $statusRdv;
-
         return $this;
     }
-
 
     public function getLiers(): Collection
     {
         return $this->liers;
     }
 
-    public function addLier(Lier $lier): static
-    {
-        if (!$this->liers->contains($lier)) {
-            $this->liers->add($lier);
-            $lier->setRdv($this);
-        }
-
-        return $this;
-    }
-
-    public function removeLier(Lier $lier): static
-    {
-        if ($this->liers->removeElement($lier)) {
-            if ($lier->getRdv() === $this) {
-                $lier->setRdv(null);
-            }
-        }
-
-        return $this;
-    }
-
-
     public function getFilesList(): Collection
     {
         return $this->filesList;
     }
-
-    public function addFiles(Files $files): static
-    {
-        if (!$this->filesList->contains($files)) {
-            $this->filesList->add($files);
-            $files->setRdv($this);
-        }
-
-        return $this;
-    }
-
-    public function removeFiles(Files $files): static
-    {
-        if ($this->filesList->removeElement($files)) {
-            if ($files->getRdv() === $this) {
-                $files->setRdv(null);
-            }
-        }
-
-        return $this;
-    }
-
 
     public function getNotificationsList(): Collection
     {
         return $this->notificationsList;
     }
 
-    public function addNotifications(Notifications $notifications): static
-    {
-        if (!$this->notificationsList->contains($notifications)) {
-            $this->notificationsList->add($notifications);
-            $notifications->setRdv($this);
-        }
-
-        return $this;
-    }
-
-    public function removeNotifications(Notifications $notifications): static
-    {
-        if ($this->notificationsList->removeElement($notifications)) {
-            if ($notifications->getRdv() === $this) {
-                $notifications->setRdv(null);
-            }
-        }
-
-        return $this;
-    }
-
-
     public function getHistoriques(): Collection
     {
         return $this->historiques;
     }
-
-    public function addHistorique(Historique $historique): static
-    {
-        if (!$this->historiques->contains($historique)) {
-            $this->historiques->add($historique);
-            $historique->setRdv($this);
-        }
-
-        return $this;
-    }
-
-    public function removeHistorique(Historique $historique): static
-    {
-        if ($this->historiques->removeElement($historique)) {
-            if ($historique->getRdv() === $this) {
-                $historique->setRdv(null);
-            }
-        }
-
-        return $this;
-    }
-
 }

@@ -8,7 +8,7 @@ use App\Entity\Prestation;
 use App\Entity\RendezVous;
 use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
-use App\Repository\RendezVousRepository;
+
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,6 +17,57 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class RendezVousController extends AbstractController
 {
+    private function serialiserRdvPourClient(RendezVous $rdv): array
+    {
+        $garage = $rdv->getGarage();
+        $vehicule = $rdv->getVehicule();
+        $client = $vehicule?->getClient();
+        $lier = $rdv->getLiers()->first() ?: null;
+        $prestation = $lier?->getPrestation();
+        $status = $rdv->getStatusRdv();
+
+        return [
+            // Format historique deja utilise dans le projet
+            'id_rdv' => $rdv->getIdRdv(),
+            'date_debut' => $rdv->getDateDebut()?->format('Y-m-d H:i:s'),
+            'date_fin' => $rdv->getDateFin()?->format('Y-m-d H:i:s'),
+            'id_status_rdv' => $status?->getIdStatusRdv(),
+            'lib_status_rdv' => $status?->getLibStatusRdv(),
+            'id_garage' => $garage?->getIdGarage(),
+            'garage' => [
+                'id_garage' => $garage?->getIdGarage(),
+                'nom_garage' => $garage?->getNomGarage(),
+            ],
+            'prestation' => [
+                'nom_prestation' => $prestation?->getNomPrestation(),
+            ],
+            'vehicule' => [
+                'id_vehicule' => $vehicule?->getIdVehicule(),
+                'immatriculation' => $vehicule?->getImatriculationVehicule(),
+                'marque' => $vehicule?->getMarque()?->getNomMarque(),
+            ],
+            'client' => $client ? [
+                'id_client' => $client->getIdClient(),
+                'prenom' => $client->getPrenomClient(),
+                'nom' => $client->getNomClient(),
+            ] : null,
+            'status_details' => [
+                'id' => $status?->getIdStatusRdv(),
+                'libStatusRdv' => $status?->getLibStatusRdv(),
+                'lib_status_rdv' => $status?->getLibStatusRdv(),
+            ],
+
+            // Format camelCase pour compatibilite avec le front React
+            'idRdv' => $rdv->getIdRdv(),
+            'dateDebut' => $rdv->getDateDebut()?->format('Y-m-d H:i:s'),
+            'dateFin' => $rdv->getDateFin()?->format('Y-m-d H:i:s'),
+            'status' => $status?->getLibStatusRdv(),
+            'commentaireClient' => $rdv->getCommantaireClient(),
+            'motifRefus' => $rdv->getMotifRefus(),
+        ];
+    }
+
+    // RendezVousController gère la création, modification et consultation des rendez-vous entre les clients et les garages, ainsi que le changement de statut des RDV.
     #[Route('/api/v1/creer_rdv', name: 'api_creer_rdv', methods: ['POST'])]
     public function createRdv(Request $request, EntityManagerInterface $manager): JsonResponse
     {
@@ -32,7 +83,7 @@ final class RendezVousController extends AbstractController
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        // Récupérer le statut 
+        // Récupérer le statut
         $statusEnAttente = $manager->getRepository(StatusRdv::class)
             ->findOneBy(['libStatusRdv' => 'En attente']);
 
@@ -65,7 +116,20 @@ final class RendezVousController extends AbstractController
             'id_rdv' => $rdv->getIdRdv()
         ]);
     }
+#[Route('/api/v1/rdv/{id}', name: 'api_delete_rdv', methods: ['DELETE'])]
+public function deleteRdv(int $id, EntityManagerInterface $entityManager): JsonResponse
+{
+    $rdv = $entityManager->getRepository(RendezVous::class)->find($id);
 
+    if (!$rdv) {
+        return $this->json(['message' => 'Rendez-vous introuvable'], JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    $entityManager->remove($rdv);
+    $entityManager->flush();
+
+    return $this->json(['message' => 'Rendez-vous annulé avec succès']);
+}
     //le methode pour changer status RDV
     #[Route('/api/v1/changer_status', name: 'api_changer_status', methods: ['POST'])]
     public function changerStatus(Request $request, EntityManagerInterface $manager): JsonResponse
@@ -100,7 +164,7 @@ final class RendezVousController extends AbstractController
             'status' => $status->getLibStatusRdv()
         ]);
     }
-    // methode pour modifier le RDV 
+    // methode pour modifier le RDV
     #[Route('/api/v1/modifier_rdv', methods:['POST'])]
     public function modifierRdv(Request $request, EntityManagerInterface $manager): JsonResponse
     {
@@ -124,51 +188,81 @@ final class RendezVousController extends AbstractController
             'message' => 'Rendez-vous modifié'
         ]);
     }
-    // afficher les RDV en fonction du garage 
-    
-    #[Route('/api/v1/garage/{idGarage}/rdvs', name: 'garage_rdvs', methods: ['GET'])]
-    public function getGarageRdvs(int $idGarage, RendezVousRepository $rdvRepository): JsonResponse
-    {
-        // Récupérer les RDV liés au garage
-        
-        $rdvs = $rdvRepository->findBy(['garage' => $idGarage]);
+    // afficher les RDV en fonction du garage
 
-        // Retourner en JSON
-        $data = array_map(fn($rdv) => [
-            'id_rdv' => $rdv->getIdRdv(),
-            'date_debut' => $rdv->getDateDebut()->format('Y-m-d H:i'),
-            'date_fin' => $rdv->getDateFin()->format('Y-m-d H:i'),
-            'motif_refus' => $rdv->getMotifRefus(),
-            'id_status_rdv' => $rdv->getStatusRdv()?->getIdStatusRdv(),
-            'id_garage' => $rdv->getGarage()?->getIdGarage(),
-        ], $rdvs);
+    #[Route('/api/v1/garage/{idGarage}/rdvs', name: 'garage_rdvs', methods: ['GET'])]
+    public function getGarageRdvs(int $idGarage, EntityManagerInterface $manager): JsonResponse
+    {
+        $qb = $manager->createQueryBuilder();
+
+        $rdvs = $qb
+            ->select('rdv', 'garage', 'vehicule', 'statusRdv', 'lier', 'prestation', 'client')
+            ->from('App\Entity\RendezVous', 'rdv')
+            ->leftJoin('rdv.garage', 'garage')
+            ->leftJoin('rdv.vehicule', 'vehicule')
+            ->leftJoin('rdv.statusRdv', 'statusRdv')
+            ->leftJoin('rdv.liers', 'lier')
+            ->leftJoin('lier.prestation', 'prestation')
+            ->leftJoin('vehicule.client', 'client')
+            ->where('garage.idGarage = :idGarage')
+            ->setParameter('idGarage', $idGarage)
+            ->orderBy('rdv.dateDebut', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $data = [];
+        foreach ($rdvs as $rdv) {
+            $client = $rdv->getVehicule()?->getClient();
+            $vehicule = $rdv->getVehicule();
+            $lier = $rdv->getLiers()->first();
+
+            $data[] = [
+                'id_rdv' => $rdv->getIdRdv(),
+                'date_debut' => $rdv->getDateDebut()?->format('Y-m-d H:i'),
+                'id_status_rdv' => $rdv->getStatusRdv()?->getIdStatusRdv(),
+                'lib_status_rdv' => $rdv->getStatusRdv()?->getLibStatusRdv(),
+                'id_garage' => $rdv->getGarage()?->getIdGarage(),
+                // Client
+                'client' => $client ? [
+                    'prenom' => $client->getPrenomClient(),
+                    'nom' => $client->getNomClient(),
+                ] : null,
+                // Véhicule - CORRIGÉ avec le bon nom de méthode
+                'vehicule' => $vehicule ? [
+                    'immatriculation' => $vehicule->getImatriculationVehicule(), // ou getImatriculation()
+                    'marque' => $vehicule->getMarque(),
+                ] : null,
+                // Prestation
+                'prestation' => $lier ? [
+                    'nom_prestation' => $lier->getPrestation()?->getNomPrestation(),
+                ] : null,
+            ];
+        }
 
         return new JsonResponse($data);
     }
     #[Route('/api/v1/client/{idClient}/rdvs', name: 'client_rdvs', methods: ['GET'])]
-public function getClientRdvs(int $idClient, RendezVousRepository $rdvRepository): JsonResponse
-{
-    $rdvs = $rdvRepository->findRdvByClient($idClient);
+    public function getClientRdvs(int $idClient, EntityManagerInterface $manager): JsonResponse
+    {
+        $qb = $manager->createQueryBuilder();
 
-    if (!$rdvs) {
-        return $this->json([]);
+        $rdvs = $qb
+            ->select('rdv', 'garage', 'vehicule', 'statusRdv', 'lier', 'prestation', 'client')
+            ->from('App\Entity\RendezVous', 'rdv')
+            ->leftJoin('rdv.garage', 'garage')
+            ->leftJoin('rdv.vehicule', 'vehicule')
+            ->leftJoin('rdv.statusRdv', 'statusRdv')  // IMPORTANT : joindre le statut
+            ->leftJoin('rdv.liers', 'lier')
+            ->leftJoin('lier.prestation', 'prestation')
+            ->leftJoin('vehicule.client', 'client')
+            ->where('client.idClient = :idClient')  // ou vehicule.client = :idClient
+            ->setParameter('idClient', $idClient)
+            ->orderBy('rdv.dateDebut', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $data = array_map(fn (RendezVous $rdv) => $this->serialiserRdvPourClient($rdv), $rdvs);
+
+        return new JsonResponse($data);
     }
-
-    $data = array_map(function ($rdv) {
-        return [
-            'id_rdv' => $rdv['id_rdv'],
-            'date_debut' => $rdv['date_debut']->format('d/m/Y'),
-            'heure_debut' => $rdv['date_debut']->format('H:i'),
-            'date_fin' => $rdv['date_fin']->format('d/m/Y'),
-            'heure_fin' => $rdv['date_fin']->format('H:i'),
-            'garage' => $rdv['garage'],
-            'immatriculation' => $rdv['immatriculation'],
-            'prestation' => $rdv['prestation'],
-            'status' => $rdv['status'] ?? 'En attente', // afficher le statut défini par le garage
-        ];
-    }, $rdvs);
-
-    return $this->json($data);
-}
-
 }

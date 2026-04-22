@@ -58,9 +58,13 @@ class Garage
     #[ORM\JoinTable(name: 'proposer')]
     private Collection $prestations;
 
+    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: RendezVous::class)]
+    private Collection $rendezVousList;
+
     public function __construct()
     {
         $this->prestations = new ArrayCollection();
+        $this->rendezVousList = new ArrayCollection();
     }
 
     // Getters & Setters
@@ -221,6 +225,32 @@ class Garage
         if ($this->prestations->removeElement($prestation)) {
             $prestation->removeGarage($this);
         }
+        return $this;
+    }
+
+    public function getRendezVousList(): Collection
+    {
+        return $this->rendezVousList;
+    }
+
+    public function addRendezVous(RendezVous $rendezVous): static
+    {
+        if (!$this->rendezVousList->contains($rendezVous)) {
+            $this->rendezVousList->add($rendezVous);
+            $rendezVous->setGarage($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRendezVous(RendezVous $rendezVous): static
+    {
+        if ($this->rendezVousList->removeElement($rendezVous)) {
+            if ($rendezVous->getGarage() === $this) {
+                $rendezVous->setGarage(null);
+            }
+        }
+
         return $this;
     }
 }

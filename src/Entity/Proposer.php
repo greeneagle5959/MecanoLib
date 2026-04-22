@@ -9,18 +9,18 @@ use Doctrine\ORM\Mapping as ORM;
 class Proposer
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: Garage::class)]
+    #[ORM\ManyToOne(targetEntity: Garage::class, inversedBy: 'proposers')]
     #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
     private Garage $garage;
 
     #[ORM\Id]
-    #[ORM\ManyToOne(targetEntity: Prestation::class)]
+    #[ORM\ManyToOne(targetEntity: Prestation::class, inversedBy: 'proposers')]
     #[ORM\JoinColumn(name: 'id_prestation', referencedColumnName: 'id_prestation', nullable: false)]
     private Prestation $prestation;
 
     // Exemple : ajouter un champ supplémentaire
     #[ORM\Column(type: 'decimal', precision: 8, scale: 2, nullable: true)]
-    private ?float $prix = null;
+    private ?string $prix = null;
 
     public function getGarage(): Garage
     {
@@ -44,12 +44,12 @@ class Proposer
         return $this;
     }
 
-    public function getPrix(): ?float
+    public function getPrix(): ?string
     {
         return $this->prix;
     }
 
-    public function setPrix(?float $prix): static
+    public function setPrix(?string $prix): static
     {
         $this->prix = $prix;
         return $this;

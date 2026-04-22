@@ -13,7 +13,7 @@ class Horaire
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(name: 'id_horaire', type: 'integer', nullable: false)]
-    private int $idHoraire;
+    private ?int $idHoraire = null;
 
     #[ORM\Column(name: 'hre_ouvre_matin', type: 'time', nullable: false)]
     private \DateTimeInterface $hreOuvreMatin;
@@ -27,11 +27,7 @@ class Horaire
     #[ORM\Column(name: 'hre_ferme_soir', type: 'time', nullable: false)]
     private \DateTimeInterface $hreFermeSoir;
 
-    #[ORM\ManyToOne(targetEntity: Garage::class, inversedBy: 'horaires')]
-    #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
-    private ?Garage $garage = null;
-
-    #[ORM\OneToMany(mappedBy: 'horaire', targetEntity: Associer::class)]
+    #[ORM\OneToMany(mappedBy: 'horaire', targetEntity: Associer::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $associers;
 
     public function __construct()
@@ -39,7 +35,7 @@ class Horaire
         $this->associers = new ArrayCollection();
     }
 
-    public function getIdHoraire(): int
+    public function getIdHoraire(): ?int
     {
         return $this->idHoraire;
     }
@@ -91,20 +87,7 @@ class Horaire
 
         return $this;
     }
-
-    public function getGarage(): ?Garage
-    {
-        return $this->garage;
-    }
-
-    public function setGarage(?Garage $garage): static
-    {
-        $this->garage = $garage;
-
-        return $this;
-    }
-
-/** @return Collection<int, Associer> */
+    /** @return Collection<int, Associer> */
     public function getAssociers(): Collection
     {
         return $this->associers;
@@ -130,5 +113,4 @@ class Horaire
 
         return $this;
     }
-
 }

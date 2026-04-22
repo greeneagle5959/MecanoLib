@@ -17,7 +17,6 @@ use Sonata\GoogleAuthenticator\GoogleQrUrl;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -153,7 +152,7 @@ final class UtilisateurController extends AbstractController
 
     // methode pour inscrire un garage 
     #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
-    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher): JsonResponse
+    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -242,6 +241,14 @@ final class UtilisateurController extends AbstractController
         $manager->persist($googleautharage);
         $manager->flush();
 
+        // lenvois de mail 
+        $emailMessage = (new Email())
+        ->from('mecanolibcontact@gmail.com')
+        ->to($email) 
+        ->subject('Confirmation de votre inscription')
+        ->html('<h1>Bienvenue </h1><p>Votre compte a été créé avec succès.</p>');
+        $mailer->send($emailMessage);
+
         return $this->json([
             'message' => 'Garage ajouté avec succès. En attente de validation par la direction.'
         ], 201);
@@ -249,7 +256,7 @@ final class UtilisateurController extends AbstractController
 
     // ajouter un superadmin 
     #[Route('/api/v1/users/ajouter_superadmin', name: 'ajouter_super_admin', methods: ['POST'])]
-    public function ajouterSuperAdmin( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher ): JsonResponse
+    public function ajouterSuperAdmin( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer ): JsonResponse
           
     {
 
@@ -296,6 +303,14 @@ final class UtilisateurController extends AbstractController
 
         $manager->persist($utilisateur);
         $manager->flush();
+
+        // lenvois de mail 
+        $emailMessage = (new Email())
+        ->from('mecanolibcontact@gmail.com')
+        ->to($email) 
+        ->subject('Confirmation de votre inscription')
+        ->html('<h1>Bienvenue </h1><p>Votre compte a été créé avec succès.</p>');
+        $mailer->send($emailMessage);
 
         return $this->json([
             "message" => "Super admin ajouté avec succès"
@@ -403,12 +418,8 @@ final class UtilisateurController extends AbstractController
     // la methode pour activer l'authentification 2FA
  
     #[Route('/api/v1/users/activer_2fa', name: 'activer_2fa', methods: ['POST'])]
-    public function activer2FA(
-        Request $request,
-        EntityManagerInterface $manager,
-        GoogleAuthenticatorInterface $googleAuthenticator,
-        MailerService $mailerService
-    ): JsonResponse 
+    public function activer2FA( Request $request,EntityManagerInterface $manager,GoogleAuthenticatorInterface $googleAuthenticator,MailerService $mailerService  ): JsonResponse 
+    
     {
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
@@ -428,8 +439,6 @@ final class UtilisateurController extends AbstractController
         $secret = $googleAuthenticator->generateSecret();
 
         $user->setAuth2fa($secret);
-
-        
         $user->setIs2fa(false);
 
         $manager->persist($user);
@@ -497,11 +506,9 @@ final class UtilisateurController extends AbstractController
    
 
     #[Route('/api/v1/users/verify_2fa', name: 'verify_2fa', methods: ['POST'])]
-    public function verify2FA(
-        Request $request,
-        EntityManagerInterface $manager,
-        GoogleAuthenticatorInterface $googleAuthenticator
-    ): JsonResponse {
+    public function verify2FA( Request $request,EntityManagerInterface $manager,GoogleAuthenticatorInterface $googleAuthenticator ): JsonResponse 
+       
+    {
 
         try {
             $data = json_decode($request->getContent(), true);
@@ -645,7 +652,6 @@ final class UtilisateurController extends AbstractController
                 <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
             </div>
         ");
-
     $mailer->send($emailMessage);
 
         return new JsonResponse([

@@ -28,13 +28,13 @@ class Prestation
     #[ORM\JoinColumn(name: 'id_categorie', referencedColumnName: 'id_categorie', nullable: false)]
     private ?Categorie $categorie = null;
 
-    #[ORM\ManyToMany(targetEntity: Garage::class, mappedBy: 'prestations')]
-    private Collection $garages;
+    #[ORM\OneToMany(targetEntity: Proposer::class, mappedBy: 'prestation')]
+    private Collection $proposers;
 
 
     public function __construct()
     {
-        $this->garages = new ArrayCollection();
+        $this->proposers = new ArrayCollection();
     }
 
 
@@ -87,24 +87,24 @@ class Prestation
         return $this;
     }
 
-    public function getGarages(): Collection
+    public function getProposers(): Collection
     {
-        return $this->garages;
+        return $this->proposers;
     }
 
-    public function addGarage(Garage $garage): static
+    public function addProposer(Proposer $proposer): static
     {
-        if (!$this->garages->contains($garage)) {
-            $this->garages->add($garage);
-            $garage->addPrestation($this);
+        if (!$this->proposers->contains($proposer)) {
+            $this->proposers->add($proposer);
+            $proposer->setPrestation($this);
         }
         return $this;
     }
 
-    public function removeGarage(Garage $garage): static
+    public function removeProposer(Proposer $proposer): static
     {
-        if ($this->garages->removeElement($garage)) {
-            $garage->removePrestation($this);
+        if ($this->proposers->removeElement($proposer)) {
+            $proposer->setPrestation(null);
         }
         return $this;
     }
