@@ -8,7 +8,7 @@ use App\Entity\Prestation;
 use App\Entity\RendezVous;
 use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
-
+use App\Repository\RendezVousRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,7 +27,7 @@ final class RendezVousController extends AbstractController
         $status = $rdv->getStatusRdv();
 
         return [
-            // Format historique deja utilise dans le projet
+           
             'id_rdv' => $rdv->getIdRdv(),
             'date_debut' => $rdv->getDateDebut()?->format('Y-m-d H:i:s'),
             'date_fin' => $rdv->getDateFin()?->format('Y-m-d H:i:s'),
@@ -57,7 +57,7 @@ final class RendezVousController extends AbstractController
                 'lib_status_rdv' => $status?->getLibStatusRdv(),
             ],
 
-            // Format camelCase pour compatibilite avec le front React
+           
             'idRdv' => $rdv->getIdRdv(),
             'dateDebut' => $rdv->getDateDebut()?->format('Y-m-d H:i:s'),
             'dateFin' => $rdv->getDateFin()?->format('Y-m-d H:i:s'),
@@ -241,7 +241,15 @@ public function deleteRdv(int $id, EntityManagerInterface $entityManager): JsonR
 
         return new JsonResponse($data);
     }
+    // recuperation rdvs client 
     #[Route('/api/v1/client/{idClient}/rdvs', name: 'client_rdvs', methods: ['GET'])]
+    public function getClientRdvs(int $idClient,RendezVousRepository $rendezVousRepository ): JsonResponse
+    {
+        $data = $rendezVousRepository->findRdvByClient($idClient);
+        return new JsonResponse($data);
+    }
+
+    /*#[Route('/api/v1/client/{idClient}/rdvs', name: 'client_rdvs', methods: ['GET'])]
     public function getClientRdvs(int $idClient, EntityManagerInterface $manager): JsonResponse
     {
         $qb = $manager->createQueryBuilder();
@@ -251,11 +259,11 @@ public function deleteRdv(int $id, EntityManagerInterface $entityManager): JsonR
             ->from('App\Entity\RendezVous', 'rdv')
             ->leftJoin('rdv.garage', 'garage')
             ->leftJoin('rdv.vehicule', 'vehicule')
-            ->leftJoin('rdv.statusRdv', 'statusRdv')  // IMPORTANT : joindre le statut
+            ->leftJoin('rdv.statusRdv', 'statusRdv')  
             ->leftJoin('rdv.liers', 'lier')
             ->leftJoin('lier.prestation', 'prestation')
             ->leftJoin('vehicule.client', 'client')
-            ->where('client.idClient = :idClient')  // ou vehicule.client = :idClient
+            ->where('client.idClient = :idClient')  
             ->setParameter('idClient', $idClient)
             ->orderBy('rdv.dateDebut', 'DESC')
             ->getQuery()
@@ -264,5 +272,5 @@ public function deleteRdv(int $id, EntityManagerInterface $entityManager): JsonR
         $data = array_map(fn (RendezVous $rdv) => $this->serialiserRdvPourClient($rdv), $rdvs);
 
         return new JsonResponse($data);
-    }
+    }*/
 }

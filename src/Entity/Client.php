@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'client')]
@@ -15,12 +16,32 @@ class Client
     #[ORM\Column(name: 'id_client', type: 'integer', nullable: false)]
     private int $idClient;
 
+
+   #[Assert\NotBlank(message: "Le nom est obligatoire")]
+    #[Assert\Length(min: 2, max: 50)]
+    #[Assert\Regex(
+        pattern: "/^[a-zA-ZÀ-ÿ\s-]+$/u",
+        message: "Nom invalide"
+    )]
     #[ORM\Column(name: 'nom_client', type: 'string', length: 30, nullable: false)]
     private string $nomClient;
 
+
+    #[Assert\NotBlank(message: "Le prénom est obligatoire")]
+    #[Assert\Length(min: 2, max: 50)]
+    #[Assert\Regex(
+        pattern: "/^[a-zA-ZÀ-ÿ\s-]+$/u",
+        message: "Prénom invalide"
+    )]
     #[ORM\Column(name: 'prenom_client', type: 'string', length: 30, nullable: false)]
     private string $prenomClient;
 
+
+    #[Assert\NotBlank(message: "Téléphone obligatoire")]
+    #[Assert\Regex(
+        pattern: "/^[0-9+\s]{8,20}$/",
+        message: "Téléphone invalide"
+    )]
     #[ORM\Column(name: 'telephone_client', type: 'string', length: 15, nullable: false)]
     private string $telephoneClient;
 

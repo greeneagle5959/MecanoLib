@@ -20,7 +20,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
+
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class UtilisateurController extends AbstractController
@@ -32,13 +34,14 @@ final class UtilisateurController extends AbstractController
          
     {
 
+       
         $data = json_decode($request->getContent(), true);
 
         $nom = $data['nom_client'] ?? "";
         $prenom = $data['prenom_client'] ?? "";
         $email = $data['email'] ?? "";
         $mdp = $data['mdp'] ?? "";
-        $tel = $data['telephone'] ?? ""; // ou 'telephone_client' si tu veux être cohérent
+        $tel = $data['telephone'] ?? ""; 
         $consentement = $data['consentement_client'] ?? false;
 
         if ($nom === "" || $prenom === "" || $email === "" || $mdp === "" || $tel === "") {
@@ -113,35 +116,39 @@ final class UtilisateurController extends AbstractController
                 'GET',
                 'https://recherche-entreprises.api.gouv.fr/search?q=' . $siret
             );
-            $status = $response->getStatusCode();
+        if ($response->getStatusCode() !== 200) {
+        return $this->json([
+            'message' => 'Impossible de vérifier le SIRET'
+        ], 400);
+        }
+        $dataInsee = $response->toArray(false);
+        if (!isset($dataInsee['results'][0])) {
+            return $this->json([
+                'message' => 'SIRET introuvable'
+            ], 400);
+        }
+        $entreprise = $dataInsee['results'][0];
+        $siege = $entreprise['siege'] ?? [];
 
-            if ($status !== 200) {
-                return $this->json([
-                    'exists' => false,
-                    
-                ]);
-            }
-            $data = $response->toArray(false);
+        $dateFermeture = $siege['date_fermeture'] ?? null;
 
-            if (!isset($data['results'][0])) {
-                return $this->json(['exists' => false]);
-            }
-
-            $e = $data['results'][0];
-            $siege = $e['siege'] ?? [];
-            $isClosed = !empty($siege['date_fermeture']);
+        if ($dateFermeture) {
+            $date = (new \DateTime($dateFermeture))->format('d/m/Y');
 
             return $this->json([
+                'message' => "Ce garage est fermé depuis le $date"
+            ], 400);
+        }
+            return $this->json([
                 'exists' => true,
-                'is_closed' => $isClosed,
-                'nom' => $e['nom_complet'] ?? '',
+                'is_closed' => $dateFermeture,
+                'nom' => $entreprise['nom_complet'] ?? '',
                 'adresse' => $siege['adresse'] ?? '',
                 'ville' => $siege['libelle_commune'] ?? '',
                 'code_postal' => $siege['code_postal'] ?? '',
                 'code_insee' => $siege['commune'] ?? '',
                 'date_fermeture' => $siege['date_fermeture'] ?? null
             ]);
-
         } catch (\Throwable $e) {
             return $this->json([
                 'exists' => false,
@@ -152,7 +159,7 @@ final class UtilisateurController extends AbstractController
 
     // methode pour inscrire un garage 
     #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
-    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer): JsonResponse
+    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer,HttpClientInterface $client): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -318,9 +325,18 @@ final class UtilisateurController extends AbstractController
     }
     // creation dune route pour generer le token
     #[Route('/api/v1/users/login', name: 'app_user_login', methods: ['POST'])]
-    public function login( Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher, GoogleAuthenticatorInterface $googleauthoogleAuth,JWTTokenManagerInterface $jwtManager ): JsonResponse
+    public function login( Request $request, UtilisateurRepository $repo, UserPasswordHasherInterface $hasher, GoogleAuthenticatorInterface $googleauthoogleAuth,JWTTokenManagerInterface $jwtManager,RateLimiterFactory $loginLimiter ): JsonResponse
        
     {
+        $limiter = $loginLimiter->create($request->getClientIp());
+        $limit = $limiter->consume();
+
+        if (!$limit->isAccepted()) {
+            return new JsonResponse([
+                'message' => 'Trop de tentatives. Réessayez dans 1 minute.'
+            ], 429);
+        } 
+
         $data = json_decode($request->getContent(), true);
         $email = $data['emailUtilisateur'] ?? '';
         $mdp = $data['mdpUtilisateur'] ?? '';
@@ -416,10 +432,10 @@ final class UtilisateurController extends AbstractController
         return $this->json($result);
     }
     // la methode pour activer l'authentification 2FA
- 
     #[Route('/api/v1/users/activer_2fa', name: 'activer_2fa', methods: ['POST'])]
-    public function activer2FA( Request $request,EntityManagerInterface $manager,GoogleAuthenticatorInterface $googleAuthenticator,MailerService $mailerService  ): JsonResponse 
-    
+    public function activer2FA( Request $request,EntityManagerInterface $manager,
+    GoogleAuthenticatorInterface $googleAuthenticator,
+    MailerService $mailerService  ): JsonResponse 
     {
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
@@ -427,14 +443,12 @@ final class UtilisateurController extends AbstractController
         if (!$email) {
             return $this->json(['message' => 'Email requis'], 400);
         }
-
         $user = $manager->getRepository(Utilisateur::class)
             ->findOneBy(['emailUtilisateur' => $email]);
 
         if (!$user) {
             return $this->json(['message' => 'Utilisateur introuvable'], 404);
         }
-
         // Génération le code secret
         $secret = $googleAuthenticator->generateSecret();
 
@@ -443,7 +457,6 @@ final class UtilisateurController extends AbstractController
 
         $manager->persist($user);
         $manager->flush();
-
        // genere qrcode
         $qrUrl = GoogleQrUrl::generate(
             $user->getEmailUtilisateur(),
@@ -455,18 +468,14 @@ final class UtilisateurController extends AbstractController
             <h2>Activation du 2FA</h2>
             <p>Scannez ce QR Code avec Google Authenticator :</p>
             <img src='$qrUrl' />
-
             <p>Ou entrez ce code manuellement :</p>
             <h3>$secret</h3>
-
             <p>Ensuite, entrez le code à 6 chiffres dans l'application.</p>";
-        
         $mailerService->sendEmail(
             $email,
             'Activation 2FA - MecanoLib',
             $html
         );
-
         return $this->json([
             'message' => 'Email envoyé avec QR Code'
         ]);
@@ -506,10 +515,9 @@ final class UtilisateurController extends AbstractController
    
 
     #[Route('/api/v1/users/verify_2fa', name: 'verify_2fa', methods: ['POST'])]
-    public function verify2FA( Request $request,EntityManagerInterface $manager,GoogleAuthenticatorInterface $googleAuthenticator ): JsonResponse 
-       
+    public function verify2FA( Request $request,EntityManagerInterface $manager,
+    GoogleAuthenticatorInterface $googleAuthenticator ): JsonResponse 
     {
-
         try {
             $data = json_decode($request->getContent(), true);
 
@@ -519,34 +527,29 @@ final class UtilisateurController extends AbstractController
             if (!$email || !$code) {
                 return $this->json(['message' => 'Email et code requis'], 400);
             }
-
             $user = $manager->getRepository(Utilisateur::class)
                 ->findOneBy(['emailUtilisateur' => $email]);
 
             if (!$user) {
                 return $this->json(['message' => 'Utilisateur introuvable'], 404);
             }
-
             $secret = $user->getAuth2fa();
 
             if (!$secret) {
                 return $this->json(['message' => '2FA non configuré'], 400);
             }
-
             //  Vérification code
             $isValid = $googleAuthenticator->checkCode($user, $code);
 
             if (!$isValid) {
                 return $this->json(['message' => 'Code 2FA invalide'], 403);
             }
-
             $user->setIs2fa(true);
             $manager->flush();
 
             return $this->json([
                 'message' => '2FA validé avec succès'
             ]);
-
         } catch (\Throwable $e) {
             return $this->json([
                 'message' => 'Erreur serveur',
@@ -596,9 +599,18 @@ final class UtilisateurController extends AbstractController
     }
     // Rounouveler mot de passe 
     #[Route('/api/v1/users/forget_password', name: 'forget_password', methods: ['POST'])]
-    public function forgetPassword( Request $request,UtilisateurRepository $repo,EntityManagerInterface $manager,MailerInterface $mailer ): JsonResponse
+    public function forgetPassword( Request $request,UtilisateurRepository $repo,EntityManagerInterface $manager,MailerInterface $mailer,RateLimiterFactory $forgetPasswordLimiter ): JsonResponse
        
     {
+        $limiter = $forgetPasswordLimiter->create($request->getClientIp());
+        $limit = $limiter->consume();
+
+        if (!$limit->isAccepted()) {
+            return new JsonResponse([
+                'message' => 'Trop de tentatives. Réessayez dans 1 minute.'
+            ], 429);
+        } 
+
         $data = json_decode($request->getContent(), true);
         $email = $data['email'] ?? null;
 

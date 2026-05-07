@@ -6,9 +6,7 @@ use App\Entity\RendezVous;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<RendezVous>
- */
+
 class RendezVousRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -35,25 +33,6 @@ class RendezVousRepository extends ServiceEntityRepository
             ')
             ->orderBy('r.dateDebut', 'DESC')
             ->getQuery()
-            ->getArrayResult(); 
+            ->getArrayResult();
     }
-    // pour gerer la double reservation 
-   // Vérifie si un créneau est déjà pris pour un garage
-    /*public function existeCreneauPris(
-        int $garageId,
-        \DateTimeInterface $dateDebut,
-        \DateTimeInterface $dateFin
-    ): bool {
-        $count = $this->createQueryBuilder('r')
-            ->select('COUNT(r.idRdv)')
-            ->andWhere('r.garage = :garage')
-            ->andWhere('(r.dateDebut < :dateFin AND r.dateFin > :dateDebut)')
-            ->setParameter('garage', $garageId)
-            ->setParameter('dateDebut', $dateDebut)
-            ->setParameter('dateFin', $dateFin)
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        return $count > 0;
-    }*/
 }

@@ -1,0 +1,11 @@
+framework:
+    rate_limiter:
+        forget_password:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 minute'
+
+        login:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 minute'

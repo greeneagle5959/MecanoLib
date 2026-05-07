@@ -27,9 +27,7 @@ class RendezVous
     #[ORM\Column(name: 'commantaire_client', type: 'text', nullable: true)]
     private ?string $commantaireClient = null;
 
-    // =========================
-    // 🔥 FIX IMPORTANT ICI
-    // =========================
+    
 
     #[ORM\ManyToOne(inversedBy: 'rendezVousList')]
     #[ORM\JoinColumn(name: 'id_garage', referencedColumnName: 'id_garage', nullable: false)]
@@ -165,3 +163,4 @@ class RendezVous
         return $this->historiques;
     }
 }
+

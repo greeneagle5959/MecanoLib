@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Associer;
-use App\Entity\Horaire;
+
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -42,7 +42,6 @@ class AssocierRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    /** @return array<int, array{jourId:int, libJour:string, idHoraire:int|null, hreOuvreMatin:string|null, hreFermeMatin:string|null, hreOuvreSoir:string|null, hreFermeSoir:string|null}> */
     public function findPlanningByGarage(int $garageId): array
     {
         $rows = $this->createQueryBuilder('a')
@@ -61,7 +60,7 @@ class AssocierRepository extends ServiceEntityRepository
                 return $value->format('H:i');
             }
             if (is_string($value) && $value !== '') {
-                // MySQL TIME may come back as "HH:MM:SS"
+                
                 return substr($value, 0, 5);
             }
 
@@ -81,7 +80,7 @@ class AssocierRepository extends ServiceEntityRepository
         }, $rows);
     }
 
-    /** @return Horaire[] */
+    
     public function findDistinctHorairesByGarage(int $garageId): array
     {
         return $this->createQueryBuilder('a')

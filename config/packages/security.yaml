@@ -13,25 +13,11 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
-        login:
-            pattern: ^/api/v1/users/login
-            stateless: true
-            provider: users_in_database
-            # json_login:
-            #    check_path: /api/v1/users/login
-            #   username_path: emailUtilisateur
-            #    password_path: mdpUtilisateur
-            #    success_handler: lexik_jwt_authentication.handler.authentication_success
-            #    failure_handler: lexik_jwt_authentication.handler.authentication_failure
-            # verifier la connexion avec 2fa
-            # two_factor:
-            #    auth_form_path: /api/v1/users/login
-            #    check_path: /api/v1/users/2fa_check
+      
 
         api:
-            pattern: ^/api/v1/users
+            pattern: ^/api
             stateless: true
-
             provider: users_in_database
             jwt: ~
 
@@ -48,28 +34,26 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        - { path: ^/api/v1/users/ajouter_superadmin, roles: ROLE_SUPER_ADMIN }
-        - { path: ^/api/v1/users/get_utilisateur, roles: ROLE_SUPER_ADMIN }
+
+         # ---------------- ROUTES PUBLIQUES ----------------
+        - { path: ^/api/v1/users/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/users/inscrire_client, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/users/inscrire-garage, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api/v1/users/2fa_check, roles: PUBLIC_ACCESS }
-        - {
-              path: ^/api/v1/users/verify_2fa,
-              roles: ["ROLE_SUPER_ADMIN", "ROLE_ADMIN", "ROLE_USER"],
-          }
+        - { path: ^/api/v1/users/forget_password, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/users/reset_password, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/check_siret_insee, roles: PUBLIC_ACCESS }
+        # ----- -----  ROUTES SUPER ADMIN ----------
+        - { path: ^/api/v1/users/ajouter_superadmin, roles: ROLE_SUPER_ADMIN }
+        - { path: ^/api/v1/users/get_utilisateur, roles: ROLE_SUPER_ADMIN }
 
-        # toutes les routes concernant vehicule
-        #- { path: ^/api/v1/choisir_marque, roles: ROLE_USER }
-        #- { path: ^/api/v1/choisir_modele/d+/, roles: ROLE_USER }
-        #- { path: ^/api/v1/client/add_vehicule, roles: ROLE_USER}
-        #- { path: ^/api/v1/client/delete_vehicule/d+/, roles: ROLE_USER }
-        #- { path: ^/api/v1/client/vehicules/d+/, roles: ROLE_USER }
-        # toutes les routes concernant Rendez-vous
-        #- { path: ^/api/v1/creer_rdv, roles: ROLE_USER }
+        # --------------- ROUTES UTILISATEUR CONNECTÉ ----------
+        - { path: ^/api/v1/users/activer_2fa, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/v1/users/verify_2fa, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/v1/users/desactiver_2fa, roles: IS_AUTHENTICATED_FULLY }
+        #- { path: ^/api/v1/users/connecter, roles: IS_AUTHENTICATED_FULLY }
 
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # -------------- PROTECTION GLOBALE API ----------
+        #- { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

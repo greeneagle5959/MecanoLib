@@ -205,7 +205,7 @@ class PrestationController extends AbstractController
 
         return $this->json(['message' => 'La prestation a ete supprime avec succes.']);
     }
-    // methode pour que le garage rajoute ca voiture 
+    // methode pour que le garage rajoute prestation 
     #[Route('/api/v1/garage/{idGarage}/add_prestations', name: 'api_garage_add_prestations', methods: ['POST'])]
     public function addPrestationsGarage( int $idGarage, Request $request,  EntityManagerInterface $manager   ): JsonResponse 
        
