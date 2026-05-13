@@ -14,7 +14,6 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
       
-
         api:
             pattern: ^/api
             stateless: true
@@ -50,11 +49,9 @@ security:
         - { path: ^/api/v1/users/activer_2fa, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/v1/users/verify_2fa, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/v1/users/desactiver_2fa, roles: IS_AUTHENTICATED_FULLY }
-        #- { path: ^/api/v1/users/connecter, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/v1/users/connecter, roles: IS_AUTHENTICATED_FULLY }
 
-        # -------------- PROTECTION GLOBALE API ----------
-        #- { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
-
+       
 when@test:
     security:
         password_hashers:

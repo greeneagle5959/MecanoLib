@@ -30,10 +30,17 @@ final class UtilisateurController extends AbstractController
 
 // la methode pour inscrire un utilisateur (client)
     #[Route('/api/v1/users/inscrire_client', name: 'app_users_inscrire_client', methods: ['POST'])]
-    public function registerClient( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher , MailerInterface $mailer): JsonResponse 
+    public function registerClient( Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher , MailerInterface $mailer,RateLimiterFactory $loginLimiter): JsonResponse 
          
     {
+        $limiter = $loginLimiter->create($request->getClientIp());
+        $limit = $limiter->consume();
 
+        if (!$limit->isAccepted()) {
+            return new JsonResponse([
+                'message' => 'Trop de tentatives. Réessayez dans 1 minute.'
+            ], 429);
+        } 
        
         $data = json_decode($request->getContent(), true);
 
@@ -159,8 +166,17 @@ final class UtilisateurController extends AbstractController
 
     // methode pour inscrire un garage 
     #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
-    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer,HttpClientInterface $client): JsonResponse
+    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer,HttpClientInterface $client,RateLimiterFactory $loginLimiter): JsonResponse
     {
+
+        $limiter = $loginLimiter->create($request->getClientIp());
+        $limit = $limiter->consume();
+
+        if (!$limit->isAccepted()) {
+            return new JsonResponse([
+                'message' => 'Trop de tentatives. Réessayez dans 1 minute.'
+            ], 429);
+        } 
 
         $data = json_decode($request->getContent(), true);
 
@@ -231,21 +247,21 @@ final class UtilisateurController extends AbstractController
         }
 
         // Créer le garage
-        $googleautharage = new Garage();
-        $googleautharage->setNomGarage($nomGarage);
-        $googleautharage->setEmailGarage($email);
-        $googleautharage->setTelephoneGarage($telephone);
-        $googleautharage->setAdresseGarage($adresse);
-        $googleautharage->setSiret($siret);
-        $googleautharage->setTva($tva);
-        $googleautharage->setDateCreation(new \DateTime());
-        $googleautharage->setUtilisateur($utilisateur);
-        $googleautharage->setVille($ville);
-        $googleautharage->setIsValide(false);
-        $googleautharage->setImgGarage($data['img_garage'] ?? null);
-        $googleautharage->setImgLogo($data['img_logo'] ?? null);
+        $addGarage = new Garage();
+        $addGarage->setNomGarage($nomGarage);
+        $addGarage->setEmailGarage($email);
+        $addGarage->setTelephoneGarage($telephone);
+        $addGarage->setAdresseGarage($adresse);
+        $addGarage->setSiret($siret);
+        $addGarage->setTva($tva);
+        $addGarage->setDateCreation(new \DateTime());
+        $addGarage->setUtilisateur($utilisateur);
+        $addGarage->setVille($ville);
+        $addGarage->setIsValide(false);
+        $addGarage->setImgGarage($data['img_garage'] ?? null);
+        $addGarage->setImgLogo($data['img_logo'] ?? null);
 
-        $manager->persist($googleautharage);
+        $manager->persist($addGarage);
         $manager->flush();
 
         // lenvois de mail 
@@ -381,7 +397,7 @@ final class UtilisateurController extends AbstractController
         ]);
     }
    
-    // la methode pour se connecter 
+    // la methode pour Récupère les infos de l’utilisateur connecté via le JWT
     #[Route('/api/v1/users/connecter', name: 'app_user_connecter', methods: ['GET'])]
     public function connecter(): JsonResponse
     {
@@ -392,13 +408,13 @@ final class UtilisateurController extends AbstractController
         }
 
         $client = $user->getClients()->first() ?: null;
-        $googleautharage = $user->getGarages()->first() ?: null;
+        $addGarage = $user->getGarages()->first() ?: null;
 
         return $this->json([
             'userId'   => $user->getIdUtilisateur(),
             'email'    => $user->getEmailUtilisateur(),
             'roles'    => $user->getRoles(),
-            'nom'      => $client?->getNomClient() ?? $googleautharage?->getNomGarage() ?? null,
+            'nom'      => $client?->getNomClient() ?? $addGarage?->getNomGarage() ?? null,
             'prenom'   => $client?->getPrenomClient() ?? null,
             'clientId' => $client?->getIdClient(),
             'is2fa' => $user->getIs2fa(),
