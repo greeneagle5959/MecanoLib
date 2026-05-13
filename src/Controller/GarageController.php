@@ -14,6 +14,7 @@ use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
 use App\Entity\Ville;
 use App\Repository\GarageRepository;
+use App\Service\MailerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -47,7 +48,10 @@ final class GarageController extends AbstractController
         return $dt->setTimezone($tz);
     }
     //  On recupere l'EntityManager une fois pour tout le controleur.
-    public function __construct(private readonly EntityManagerInterface $entityManager)
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly MailerService $mailerService
+    )
     {
     }
 
@@ -270,23 +274,38 @@ final class GarageController extends AbstractController
         }
 
         foreach ($planning as $item) {
-            if (!is_array($item) || !isset($item['jourId'], $item['horaireId'])) {
+            if (!is_array($item) || !isset($item['jourId'])) {
                 return $this->json([
-                    'error' => 'Chaque entree doit avoir jourId et horaireId'
+                    'error' => 'Chaque entree doit avoir jourId'
                 ], Response::HTTP_BAD_REQUEST);
             }
 
             $jour = $this->entityManager->getRepository(Jour::class)->find((int) $item['jourId']);
-            $horaire = $this->entityManager->getRepository(Horaire::class)->find((int) $item['horaireId']);
+            if ($jour === null) {
+                return $this->json(['error' => 'Jour introuvable'], Response::HTTP_BAD_REQUEST);
+            }
 
-            if ($jour === null || $horaire === null) {
-                return $this->json(['error' => 'Jour ou horaire introuvable'], Response::HTTP_BAD_REQUEST);
+            $horaireId = $item['horaireId'] ?? null;
+            $horaire = null;
+            if ($horaireId !== null && $horaireId !== '') {
+                $horaire = $this->entityManager->getRepository(Horaire::class)->find((int) $horaireId);
+                if ($horaire === null) {
+                    return $this->json(['error' => 'Horaire introuvable'], Response::HTTP_BAD_REQUEST);
+                }
             }
 
             $existingAssocier = $this->entityManager->getRepository(Associer::class)->findOneBy([
                 'garage' => $garage,
                 'jour' => $jour,
             ]);
+
+            if ($horaire === null) {
+                if ($existingAssocier) {
+                    $this->entityManager->remove($existingAssocier);
+                }
+
+                continue;
+            }
 
             if ($existingAssocier) {
                 $existingAssocier->setHoraire($horaire);
@@ -305,6 +324,57 @@ final class GarageController extends AbstractController
         return $this->json([
             'message' => 'Planning de la semaine mis a jour',
             'planning' => $planning,
+        ]);
+    }
+
+    #[Route('/api/v1/horaires/demande_super_admin', name: 'horaires_demande_super_admin', methods: ['POST'])]
+    public function demanderHoraireSuperAdmin(Request $request): JsonResponse
+    {
+        $payload = $this->recupererPayload($request);
+        $garage = $this->resoudreGarage($request, $payload);
+
+        if ($garage === null) {
+            return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
+        }
+
+        $jours = $payload['jours'] ?? [];
+        $motif = trim((string) ($payload['motif'] ?? 'Aucun horaire predefini ne correspond au besoin.'));
+
+        $superAdmins = $this->entityManager->getRepository(Utilisateur::class)
+            ->createQueryBuilder('u')
+            ->join('u.role', 'r')
+            ->where('r.nomRole = :role')
+            ->setParameter('role', 'ROLE_SUPER_ADMIN')
+            ->getQuery()
+            ->getResult();
+
+        $emails = array_values(array_filter(array_map(
+            static fn (Utilisateur $utilisateur): ?string => $utilisateur->getEmailUtilisateur() ?: null,
+            $superAdmins
+        )));
+
+        if ($emails === []) {
+            return $this->json([
+                'error' => 'Aucun super admin disponible pour recevoir la demande',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $joursTexte = is_array($jours) ? implode(', ', array_map('strval', $jours)) : '';
+        $subject = sprintf('Demande d horaire - %s', $garage->getNomGarage());
+        $html = sprintf(
+            '<h2>Demande de horaire predefini</h2><p><strong>Garage :</strong> %s</p><p><strong>Jours concernes :</strong> %s</p><p><strong>Besoin :</strong> %s</p><p>Merci de valider ou proposer un modele standard.</p>',
+            htmlspecialchars($garage->getNomGarage(), ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($joursTexte !== '' ? $joursTexte : 'Non precise', ENT_QUOTES, 'UTF-8'),
+            nl2br(htmlspecialchars($motif, ENT_QUOTES, 'UTF-8'))
+        );
+
+        foreach ($emails as $email) {
+            $this->mailerService->sendEmail($email, $subject, $html);
+        }
+
+        return $this->json([
+            'message' => 'Demande envoyee au super admin',
+            'emails' => $emails,
         ]);
     }
 
@@ -335,7 +405,6 @@ final class GarageController extends AbstractController
             ->setNomPrestation((string) $payload['nomPrestation'])
             ->setDescriptionPrestation((string) $payload['descriptionPrestation'])
             ->setDureePrestation((string) $payload['dureePrestation'])
-            ->setCategoriePrestation((string) $payload['categoriePrestation'])
             ->setCategorie($categorie);
 
         $garage->addPrestation($prestation);
@@ -518,6 +587,8 @@ final class GarageController extends AbstractController
             return $this->json(['error' => 'Rendez-vous introuvable'], Response::HTTP_NOT_FOUND);
         }
 
+        $ancienStatut = $rdv->getStatusRdv()?->getLibStatusRdv();
+
         $payload = $this->recupererPayload($request);
         if (isset($payload['statusId'])) {
             $status = $this->entityManager->getRepository(StatusRdv::class)->find((int) $payload['statusId']);
@@ -528,12 +599,7 @@ final class GarageController extends AbstractController
         }
 
         if (isset($payload['statusLabel'])) {
-            $status = $this->entityManager->getRepository(StatusRdv::class)->findOneBy([
-                'libStatusRdv' => (string) $payload['statusLabel'],
-            ]);
-            if ($status === null) {
-                return $this->json(['error' => 'StatusRdv introuvable pour ce libelle'], Response::HTTP_BAD_REQUEST);
-            }
+            $status = $this->trouverOuCreerStatusRdv((string) $payload['statusLabel']);
             $rdv->setStatusRdv($status);
         }
 
@@ -543,10 +609,13 @@ final class GarageController extends AbstractController
 
         $this->entityManager->flush();
 
+        $mailResult = $this->notifierClientChangementStatut($rdv, $ancienStatut, $rdv->getStatusRdv()?->getLibStatusRdv(), $payload['motifRefus'] ?? null);
+
         return $this->json([
             'message' => 'Rendez-vous mis a jour',
             'rdv_id' => $id,
             'rdv' => $this->serialiserRdv($rdv),
+            'mail' => $mailResult,
         ]);
     }
 
@@ -815,7 +884,8 @@ final class GarageController extends AbstractController
 
         if ($prestationId !== null && $prestationId !== '') {
             $qb
-                ->innerJoin('g.prestations', 'fp')
+                ->innerJoin('g.proposers', 'pr')
+                ->innerJoin('pr.prestation', 'fp')
                 ->andWhere('fp.idPrestation = :prestationId')
                 ->setParameter('prestationId', (int) $prestationId);
         }
@@ -860,6 +930,121 @@ final class GarageController extends AbstractController
                 $garage->getPrestations()->toArray()
             ),
         ];
+    }
+
+    private function trouverOuCreerStatusRdv(string $label): StatusRdv
+    {
+        $label = trim($label);
+        $status = $this->entityManager->getRepository(StatusRdv::class)->findOneBy([
+            'libStatusRdv' => $label,
+        ]);
+
+        if ($status instanceof StatusRdv) {
+            return $status;
+        }
+
+        $status = new StatusRdv();
+        $status->setLibStatusRdv($label);
+        $this->entityManager->persist($status);
+
+        return $status;
+    }
+
+    private function notifierClientChangementStatut(RendezVous $rdv, ?string $ancienStatut, ?string $nouveauStatut, ?string $motifRefus = null): array
+    {
+        $vehicule = $rdv->getVehicule();
+        $client = $vehicule?->getClient();
+        $utilisateur = $client?->getUtilisateur();
+        $email = $utilisateur?->getEmailUtilisateur();
+
+        if (!$email) {
+            return [
+                'sent' => false,
+                'reason' => 'email_client_introuvable',
+            ];
+        }
+
+        $status = trim((string) $nouveauStatut);
+        $label = $this->normaliserStatut($status);
+        $vehicleName = trim(($vehicule?->getMarque()?->getNomMarque() ?? '') . ' ' . ($vehicule?->getModele()?->getNomModele() ?? ''));
+        $clientName = trim(($client?->getPrenomClient() ?? '') . ' ' . ($client?->getNomClient() ?? ''));
+        $dateDebut = $rdv->getDateDebut()?->format('d/m/Y à H:i');
+        $dateFin = $rdv->getDateFin()?->format('d/m/Y à H:i');
+        $plate = $vehicule?->getImatriculationVehicule() ?? '-';
+
+        $title = match ($label) {
+            'en attente' => 'Votre rendez-vous est en attente de validation',
+            'confirmer' => 'Votre rendez-vous est confirmé',
+            'en cours' => 'Votre véhicule est en cours de réparation',
+            'reparation terminee' => 'Votre réparation est terminée',
+            'refuser' => 'Votre rendez-vous a été refusé',
+            'termine', 'terminee' => 'Votre rendez-vous est terminé',
+            default => 'Mise à jour de votre rendez-vous',
+        };
+
+        $message = match ($label) {
+            'en attente' => 'Nous avons bien reçu votre demande. Elle est en attente de validation par le garage.',
+            'confirmer' => 'Votre rendez-vous est confirmé. Le garage prépare votre passage.',
+            'en cours' => 'Votre véhicule est actuellement en cours de réparation.',
+            'reparation terminee' => 'La réparation est terminée. Vous pouvez venir récupérer votre voiture quand vous le souhaitez.',
+            'refuser' => 'Votre rendez-vous a été refusé par le garage.',
+            'termine', 'terminee' => 'Le rendez-vous est terminé.',
+            default => 'Le statut de votre rendez-vous a été mis à jour.',
+        };
+
+        $extra = '';
+        if ($label === 'refuser' && $motifRefus) {
+            $extra = '<p><strong>Motif :</strong> ' . htmlspecialchars((string) $motifRefus, ENT_QUOTES, 'UTF-8') . '</p>';
+        }
+
+        $html = sprintf(
+            '<div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">'
+            . '<h2 style="margin:0 0 12px">%s</h2>'
+            . '<p>%s</p>'
+            . '<p><strong>Client :</strong> %s</p>'
+            . '<p><strong>Véhicule :</strong> %s</p>'
+            . '<p><strong>Plaque :</strong> %s</p>'
+            . '<p><strong>Marque / Modèle :</strong> %s</p>'
+            . '<p><strong>Date début :</strong> %s</p>'
+            . '<p><strong>Date fin :</strong> %s</p>'
+            . '<p><strong>Ancien statut :</strong> %s</p>'
+            . '<p><strong>Nouveau statut :</strong> %s</p>'
+            . '%s'
+            . '</div>',
+            htmlspecialchars($title, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($message, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($clientName !== '' ? $clientName : '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($vehicleName !== '' ? $vehicleName : '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($plate, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($vehicleName !== '' ? $vehicleName : '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($dateDebut ?? '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($dateFin ?? '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($ancienStatut ?? '-', ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($status !== '' ? $status : '-', ENT_QUOTES, 'UTF-8'),
+            $extra
+        );
+
+        try {
+            $this->mailerService->sendEmail($email, $title, $html);
+
+            return [
+                'sent' => true,
+                'to' => $email,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'sent' => false,
+                'to' => $email,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    private function normaliserStatut(string $status): string
+    {
+        $status = trim(mb_strtolower($status));
+
+        return str_replace(['é', 'è', 'ê', 'à', 'ç', 'ô', 'î', 'ï', ' '], ['e', 'e', 'e', 'a', 'c', 'o', 'i', 'i', ' '], $status);
     }
     
 }

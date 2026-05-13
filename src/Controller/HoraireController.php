@@ -44,7 +44,12 @@ final class HoraireController extends AbstractController
 	#[Route('/api/v1/get_horaires', name: 'api_get_horaires', methods: ['GET'])]
 	public function getAllHoraires(HoraireRepository $horaireRepository): JsonResponse
 	{
-		$horaires = $horaireRepository->findAll();
+		$horaires = $horaireRepository->findBy([], [
+			'hreOuvreMatin' => 'ASC',
+			'hreFermeMatin' => 'ASC',
+			'hreOuvreSoir' => 'ASC',
+			'hreFermeSoir' => 'ASC',
+		]);
 
 		$result = array_map(
 			fn (Horaire $horaire): array => $this->formatHoraire($horaire),
@@ -252,6 +257,7 @@ final class HoraireController extends AbstractController
 		Request $request,
 		HoraireRepository $horaireRepository,
 		GarageRepository $garageRepository,
+		JourRepository $jourRepository,
 		EntityManagerInterface $entityManager
 	): JsonResponse {
 		$horaire = $horaireRepository->find($id);
@@ -424,8 +430,18 @@ final class HoraireController extends AbstractController
             'lib_jour' => $jour['lib_jour'],
         ], $jours);
 
+		$labelCourt = sprintf(
+			'%sh-%sh / %sh-%sh',
+			$horaire->getHreOuvreMatin()->format('G'),
+			$horaire->getHreFermeMatin()->format('G'),
+			$horaire->getHreOuvreSoir()->format('G'),
+			$horaire->getHreFermeSoir()->format('G')
+		);
+
 		return [
 			'id_horaire' => $horaire->getIdHoraire(),
+			'label' => $labelCourt,
+			'summary' => $labelCourt,
 			'hre_ouvre_matin' => $horaire->getHreOuvreMatin()->format('H:i'),
 			'hre_ferme_matin' => $horaire->getHreFermeMatin()->format('H:i'),
 			'hre_ouvre_soir' => $horaire->getHreOuvreSoir()->format('H:i'),
@@ -437,15 +453,18 @@ final class HoraireController extends AbstractController
 
 	#[Route('/api/v1/horaires/create', name: 'create', methods: ['POST'])]
     // Ici, c'est pour créer un nouvel horaire, easy
-    public function create(Request $request): JsonResponse
+	public function create(
+		Request $request,
+		EntityManagerInterface $entityManager,
+		GarageRepository $garageRepository,
+		HoraireRepository $horaireRepository,
+		JourRepository $jourRepository
+	): JsonResponse
     {
-        // On vérifie si t'as le droit de faire ça (faut être Superadmin, cousin)
-        if (($response = $this->verifierAccesGestionHoraires()) !== null) {
-            return $response;
-        }
-
-        // On récupère les données envoyées (payload)
-        $payload = $this->recupererPayload($request);
+		$payload = json_decode($request->getContent(), true);
+		if (!is_array($payload)) {
+			return $this->json(['message' => 'JSON invalide.'], Response::HTTP_BAD_REQUEST);
+		}
 
         // On check que t'as bien tout rempli, sinon on râle
         foreach (['garageId', 'hreOuvreMatin', 'hreFermeMatin', 'hreOuvreSoir', 'hreFermeSoir'] as $field) {
@@ -456,30 +475,29 @@ final class HoraireController extends AbstractController
             }
         }
 
-        // On va chercher le garage qui va avec l'id
-        $garage = $this->entityManager->getRepository(Garage::class)->find((int) $payload['garageId']);
+		// On va chercher le garage qui va avec l'id
+		$garage = $garageRepository->find((int) $payload['garageId']);
         if ($garage === null) {
             return $this->json(['message' => 'Garage introuvable.'], Response::HTTP_BAD_REQUEST);
         }
 
         // On convertit les heures en objets DateTime (sinon c'est le dawa)
-        $ouvreMatin = $this->parserHeure((string) $payload['hreOuvreMatin']);
-        $fermeMatin = $this->parserHeure((string) $payload['hreFermeMatin']);
-        $ouvreSoir = $this->parserHeure((string) $payload['hreOuvreSoir']);
-        $fermeSoir = $this->parserHeure((string) $payload['hreFermeSoir']);
+		$ouvreMatin = $this->parseTime((string) $payload['hreOuvreMatin']);
+		$fermeMatin = $this->parseTime((string) $payload['hreFermeMatin']);
+		$ouvreSoir = $this->parseTime((string) $payload['hreOuvreSoir']);
+		$fermeSoir = $this->parseTime((string) $payload['hreFermeSoir']);
 
         if ($ouvreMatin === null || $fermeMatin === null || $ouvreSoir === null || $fermeSoir === null) { // Si une heure est foireuse, on te le dit
             return $this->json(['message' => 'Format heure invalide. Utiliser HH:MM.'], Response::HTTP_BAD_REQUEST);
         }
 
         // On vérifie s'il existe déjà un horaire pour ce garage
-        $horaireRepository = $this->entityManager->getRepository(Horaire::class);
-        $horaire = $horaireRepository->findOneBy(['garage' => $garage]);
+		$horaire = $horaireRepository->findExistingHoraire($ouvreMatin, $fermeMatin, $ouvreSoir, $fermeSoir);
 
         if ($horaire) {
             // S'il existe, on le met à jour
             $horaire
-                ->setHreOuvreMatin($ouvreMatin)
+				->setHreOuvreMatin($ouvreMatin)
                 ->setHreFermeMatin($fermeMatin)
                 ->setHreOuvreSoir($ouvreSoir)
                 ->setHreFermeSoir($fermeSoir);
@@ -489,22 +507,22 @@ final class HoraireController extends AbstractController
             // Sinon, on crée un nouvel horaire
             $horaire = new Horaire();
             $horaire
-                ->setGarage($garage)
                 ->setHreOuvreMatin($ouvreMatin)
                 ->setHreFermeMatin($fermeMatin)
                 ->setHreOuvreSoir($ouvreSoir)
                 ->setHreFermeSoir($fermeSoir);
-            $this->entityManager->persist($horaire);
+			$entityManager->persist($horaire);
             $message = 'Horaire cree avec succes.';
             $status = Response::HTTP_CREATED;
         }
 
-        $this->entityManager->flush();
+		$this->ensureSevenDaysForGarageHoraire($garage, $horaire, $jourRepository, $entityManager);
+		$entityManager->flush();
 
         // On te confirme le résultat
         return $this->json([
             'message' => $message,
-            'horaire' => $this->serialiserHoraire($horaire),
+			'horaire' => $this->formatHoraire($horaire),
         ], $status);
     }
 

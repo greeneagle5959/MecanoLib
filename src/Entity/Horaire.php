@@ -7,7 +7,9 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'horaire')]
+#[ORM\Table(name: 'horaire', uniqueConstraints: [
+    new ORM\UniqueConstraint(name: 'uniq_horaire_creneau', fields: ['hreOuvreMatin', 'hreFermeMatin', 'hreOuvreSoir', 'hreFermeSoir'])
+])]
 class Horaire
 {
     #[ORM\Id]

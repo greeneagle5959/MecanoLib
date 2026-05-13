@@ -24,13 +24,15 @@ class Prestation
     #[ORM\Column(name: 'duree_prestation', type: 'string', length: 10)]
     private string $dureePrestation;
 
+    #[ORM\Column(name: 'categorie_prestation', type: 'string', length: 30)]
+    private string $categoriePrestation;
+
     #[ORM\ManyToOne(targetEntity: Categorie::class, inversedBy: 'prestations')]
     #[ORM\JoinColumn(name: 'id_categorie', referencedColumnName: 'id_categorie', nullable: false)]
     private ?Categorie $categorie = null;
 
     #[ORM\OneToMany(targetEntity: Proposer::class, mappedBy: 'prestation')]
     private Collection $proposers;
-
 
     public function __construct()
     {
@@ -81,6 +83,18 @@ class Prestation
         return $this->categorie;
     }
 
+    public function getCategoriePrestation(): string
+    {
+        return $this->categoriePrestation;
+    }
+
+    public function setCategoriePrestation(string $categoriePrestation): static
+    {
+        $this->categoriePrestation = $categoriePrestation;
+
+        return $this;
+    }
+
     public function setCategorie(?Categorie $categorie): static
     {
         $this->categorie = $categorie;
@@ -103,9 +117,20 @@ class Prestation
 
     public function removeProposer(Proposer $proposer): static
     {
-        if ($this->proposers->removeElement($proposer)) {
-            $proposer->setPrestation(null);
-        }
+        $this->proposers->removeElement($proposer);
         return $this;
+    }
+
+    public function getGarages(): Collection
+    {
+        $garages = new ArrayCollection();
+        foreach ($this->proposers as $proposer) {
+            $garage = $proposer->getGarage();
+            if (!$garages->contains($garage)) {
+                $garages->add($garage);
+            }
+        }
+
+        return $garages;
     }
 }
