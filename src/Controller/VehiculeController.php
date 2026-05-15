@@ -51,6 +51,52 @@ final class VehiculeController extends AbstractController
 
         return new JsonResponse($data);
     }
+
+    #[Route('/api/v1/vehicules/rechercher/{plaque}', name: 'app_rechercher_vehicule_par_plaque', methods: ['GET'])]
+    public function rechercherVehiculeParPlaque(string $plaque, EntityManagerInterface $manager): JsonResponse
+    {
+        $normalizedPlaque = strtoupper(trim($plaque));
+
+        if ($normalizedPlaque === '') {
+            return new JsonResponse([
+                'message' => 'Plaque manquante'
+            ], 400);
+        }
+
+        $vehicule = $manager->getRepository(Vehicule::class)->findOneBy([
+            'imatriculationVehicule' => $normalizedPlaque,
+        ]);
+
+        if (!$vehicule) {
+            return new JsonResponse([
+                'found' => false,
+                'message' => 'Véhicule introuvable'
+            ], 404);
+        }
+
+        $client = $vehicule->getClient();
+        $marque = $vehicule->getMarque();
+        $modele = $vehicule->getModele();
+
+        return new JsonResponse([
+            'found' => true,
+            'vehiculeId' => $vehicule->getIdVehicule(),
+            'plaque' => $vehicule->getImatriculationVehicule(),
+            'client' => $client ? [
+                'idClient' => $client->getIdClient(),
+                'nom' => $client->getNomClient(),
+                'prenom' => $client->getPrenomClient(),
+            ] : null,
+            'marque' => $marque ? [
+                'idMarque' => $marque->getIdMarque(),
+                'nomMarque' => $marque->getNomMarque(),
+            ] : null,
+            'modele' => $modele ? [
+                'idModele' => $modele->getIdModele(),
+                'nomModele' => $modele->getNomModele(),
+            ] : null,
+        ]);
+    }
 // la methode pour que le client peut ajouter ces voiture 
     #[Route('/api/v1/client/add_vehicule', name: 'app_add_vehicule', methods: ['POST'])]
     public function addVehicule( Request $request,EntityManagerInterface $manager,ClientRepository $clientRepo,MarqueRepository $marqueRepo ): JsonResponse

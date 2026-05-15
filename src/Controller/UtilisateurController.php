@@ -8,6 +8,7 @@ use App\Entity\Role;
 use App\Entity\Utilisateur;
 use App\Entity\Ville;
 use App\Repository\UtilisateurRepository;
+use App\Service\InseeSiretService;
 use App\Service\MailerService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -22,8 +23,6 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
-
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class UtilisateurController extends AbstractController
 {
@@ -114,59 +113,22 @@ final class UtilisateurController extends AbstractController
         ], 201);
     }
 
-    // verifecation numero siret 
+    // verification numero siret
     #[Route('/api/v1/check_siret_insee/{siret}', methods: ['GET'])]
-    public function checkSiretInsee(string $siret, HttpClientInterface $client): JsonResponse
+    #[Route('/api/v1/check_siret_insee', methods: ['POST'])]
+    public function checkSiretInsee(Request $request, InseeSiretService $inseeSiretService, ?string $siret = null): JsonResponse
     {
-        try {
-            $response = $client->request(
-                'GET',
-                'https://recherche-entreprises.api.gouv.fr/search?q=' . $siret
-            );
-        if ($response->getStatusCode() !== 200) {
-        return $this->json([
-            'message' => 'Impossible de vérifier le SIRET'
-        ], 400);
-        }
-        $dataInsee = $response->toArray(false);
-        if (!isset($dataInsee['results'][0])) {
-            return $this->json([
-                'message' => 'SIRET introuvable'
-            ], 400);
-        }
-        $entreprise = $dataInsee['results'][0];
-        $siege = $entreprise['siege'] ?? [];
+        $payload = json_decode($request->getContent(), true);
+        $rawSiret = $siret ?? (is_array($payload) ? ($payload['siret'] ?? '') : '');
 
-        $dateFermeture = $siege['date_fermeture'] ?? null;
+        $result = $inseeSiretService->verify((string) $rawSiret);
 
-        if ($dateFermeture) {
-            $date = (new \DateTime($dateFermeture))->format('d/m/Y');
-
-            return $this->json([
-                'message' => "Ce garage est fermé depuis le $date"
-            ], 400);
-        }
-            return $this->json([
-                'exists' => true,
-                'is_closed' => $dateFermeture,
-                'nom' => $entreprise['nom_complet'] ?? '',
-                'adresse' => $siege['adresse'] ?? '',
-                'ville' => $siege['libelle_commune'] ?? '',
-                'code_postal' => $siege['code_postal'] ?? '',
-                'code_insee' => $siege['commune'] ?? '',
-                'date_fermeture' => $siege['date_fermeture'] ?? null
-            ]);
-        } catch (\Throwable $e) {
-            return $this->json([
-                'exists' => false,
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return $this->json($result['payload'], $result['status']);
     }
 
     // methode pour inscrire un garage 
     #[Route('/api/v1/users/inscrire-garage', name: 'app_users_inscrire-garage', methods: ['POST'])]
-    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer,HttpClientInterface $client,RateLimiterFactory $loginLimiter): JsonResponse
+    public function registerGarage(Request $request, EntityManagerInterface $manager, UserPasswordHasherInterface $passwordHasher,MailerInterface $mailer,RateLimiterFactory $loginLimiter): JsonResponse
     {
 
         $limiter = $loginLimiter->create($request->getClientIp());
@@ -403,7 +365,7 @@ final class UtilisateurController extends AbstractController
     {
         $user = $this->getUser(); 
 
-        if (!$user) {
+        if (!$user instanceof Utilisateur) {
             return $this->json(['message' => 'Utilisateur non connecté'], 401);
         }
 

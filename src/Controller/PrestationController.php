@@ -16,6 +16,25 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class PrestationController extends AbstractController
 {
+    #[Route('/api/v1/prestations/catalogue', name: 'api_prestations_catalogue', methods: ['GET'])]
+    public function getPrestationsCatalogue(PrestationRepository $prestationRepository): JsonResponse
+    {
+        $prestations = $prestationRepository->findBy([], ['nomPrestation' => 'ASC']);
+
+        $data = array_map(
+            static fn (Prestation $prestation): array => [
+                'idPrestation' => $prestation->getIdPrestation(),
+                'nomPrestation' => $prestation->getNomPrestation(),
+                'descriptionPrestation' => $prestation->getDescriptionPrestation(),
+                'dureePrestation' => $prestation->getDureePrestation(),
+                'categorie' => $prestation->getCategorie()?->getNomCategorie(),
+            ],
+            $prestations
+        );
+
+        return $this->json(['prestations' => $data]);
+    }
+
     #[Route('/api/v1/get_prestations', name: 'api_get_prestations', methods: ['GET'])]
     public function getAllPrestations(PrestationRepository $prestationRepository): JsonResponse
     {
@@ -37,7 +56,7 @@ class PrestationController extends AbstractController
             return $this->json(['message' => 'Catégorie introuvable.'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        $prestations = $categorie->getPrestations(); 
+        $prestations = $categorie->getPrestations();
 
         $data = array_map(
             static fn ($p) => [
@@ -51,24 +70,22 @@ class PrestationController extends AbstractController
 
         return $this->json($data);
     }
-    
+
     #[Route('/api/v1/get_prestations_by_garage/{idGarage}', name: 'api_get_prestations_by_garage', methods: ['GET'])]
     public function prestationsByGarage(int $idGarage, EntityManagerInterface $em): JsonResponse
     {
-        // Vérifier que le garage existe
         $garage = $em->getRepository(Garage::class)->find($idGarage);
         if (!$garage) {
             return $this->json(['message' => 'Garage introuvable.'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        // Récupérer les prestations liées au garage via la table proposer
         $qb = $em->createQueryBuilder();
-        $qb->select('p.idPrestation, p.nomPrestation, p.descriptionPrestation, p.dureePrestation, c.idCategorie, c.nomCategorie')
-        ->from('App\Entity\Prestation', 'p')
-        ->innerJoin('App\Entity\Proposer', 'pr', 'WITH', 'pr.prestation = p.idPrestation')
-        ->leftJoin('p.categorie', 'c')
-        ->where('pr.garage = :garage')
-        ->setParameter('garage', $garage);
+        $qb->select('p.idPrestation AS idPrestation, p.nomPrestation AS nomPrestation, p.descriptionPrestation AS descriptionPrestation, p.dureePrestation AS dureePrestation, c.idCategorie AS idCategorie, c.nomCategorie AS nomCategorie, pr.prix AS prix')
+            ->from('App\\Entity\\Prestation', 'p')
+            ->innerJoin('App\\Entity\\Proposer', 'pr', 'WITH', 'pr.prestation = p')
+            ->leftJoin('p.categorie', 'c')
+            ->where('pr.garage = :garage')
+            ->setParameter('garage', $garage);
 
         $prestations = $qb->getQuery()->getArrayResult();
 
@@ -82,8 +99,9 @@ class PrestationController extends AbstractController
         if (!$prestation) {
             return $this->json(['message' => 'Prestation introuvable.'], JsonResponse::HTTP_NOT_FOUND);
         }
-    $categorie = $prestation->getCategorie();
-     $nomprestation = [
+
+        $categorie = $prestation->getCategorie();
+        $nomprestation = [
             'id_prestation' => $prestation->getIdPrestation(),
             'nom_prestation' => $prestation->getNomPrestation(),
             'description_prestation' => $prestation->getDescriptionPrestation(),
@@ -134,7 +152,6 @@ class PrestationController extends AbstractController
 
         return $this->json([
             'message' => 'La prestation a ete ajoutee avec succes.',
-
         ], JsonResponse::HTTP_CREATED);
     }
 
@@ -144,8 +161,7 @@ class PrestationController extends AbstractController
         Prestation $prestation,
         EntityManagerInterface $entityManager,
         CategorieRepository $categorieRepository
-    ): JsonResponse
-    {
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
@@ -196,7 +212,7 @@ class PrestationController extends AbstractController
             'message' => 'La prestation a ete modifiee avec succes.',
         ]);
     }
-// supprimer une prestation
+
     #[Route('/api/v1/delete_prestation/{id}', name: 'app_prestation_delete', methods: ['DELETE'], requirements: ['id' => '\\d+'])]
     public function delete(Prestation $prestation, EntityManagerInterface $entityManager): JsonResponse
     {
@@ -205,16 +221,15 @@ class PrestationController extends AbstractController
 
         return $this->json(['message' => 'La prestation a ete supprime avec succes.']);
     }
-    // methode pour que le garage rajoute prestation 
+
     #[Route('/api/v1/garage/{idGarage}/add_prestations', name: 'api_garage_add_prestations', methods: ['POST'])]
-    public function addPrestationsGarage( int $idGarage, Request $request,  EntityManagerInterface $manager   ): JsonResponse 
-       
+    public function addPrestationsGarage(int $idGarage, Request $request, EntityManagerInterface $manager): JsonResponse
     {
         $garage = $manager->getRepository(Garage::class)->find($idGarage);
 
         if (!$garage) {
             return $this->json([
-                'message' => 'Garage introuvable'
+                'message' => 'Garage introuvable',
             ]);
         }
 
@@ -222,37 +237,33 @@ class PrestationController extends AbstractController
 
         if (!isset($data['prestations']) || !is_array($data['prestations'])) {
             return $this->json([
-                'message' => 'Liste des prestations requise'
+                'message' => 'Liste des prestations requise',
             ]);
         }
+
         $proposerRepo = $manager->getRepository(Proposer::class);
         foreach ($data['prestations'] as $item) {
-
             if (!isset($item['id']) || !isset($item['prix'])) {
                 continue;
             }
 
             $prestation = $manager->getRepository(Prestation::class)->find($item['id']);
-
             if (!$prestation) {
                 continue;
             }
 
-            // vérifier si la prestation existe déjà
             $existing = $proposerRepo->findOneBy([
                 'garage' => $garage,
-                'prestation' => $prestation
+                'prestation' => $prestation,
             ]);
 
             if ($existing) {
-                // mise à jour du prix
-                $existing->setPrix((float)$item['prix']);
+                $existing->setPrix((float) $item['prix']);
             } else {
-                // ajout nouvelle prestation
                 $proposer = new Proposer();
                 $proposer->setGarage($garage);
                 $proposer->setPrestation($prestation);
-                $proposer->setPrix((float)$item['prix']);
+                $proposer->setPrix((float) $item['prix']);
 
                 $manager->persist($proposer);
             }
@@ -261,32 +272,30 @@ class PrestationController extends AbstractController
         $manager->flush();
 
         return $this->json([
-            'message' => 'Prestations mises à jour avec succès'
+            'message' => 'Prestations mises à jour avec succès',
         ]);
     }
-    // methode pour supprimer une prestation dans un garage
-    #[Route('/api/v1/garage/{idGarage}/delete_prestation/{idPrestation}', name: 'api_garage_delete_prestation', methods: ['DELETE'])]
-    public function deletePrestationGarage(  int $idGarage,int $idPrestation,EntityManagerInterface $manager ): JsonResponse
-       
-    {
 
+    #[Route('/api/v1/garage/{idGarage}/delete_prestation/{idPrestation}', name: 'api_garage_delete_prestation', methods: ['DELETE'])]
+    public function deletePrestationGarage(int $idGarage, int $idPrestation, EntityManagerInterface $manager): JsonResponse
+    {
         $garage = $manager->getRepository(Garage::class)->find($idGarage);
         $prestation = $manager->getRepository(Prestation::class)->find($idPrestation);
 
         if (!$garage || !$prestation) {
             return $this->json([
-                'message' => 'Garage ou prestation introuvable'
+                'message' => 'Garage ou prestation introuvable',
             ]);
         }
 
         $proposer = $manager->getRepository(Proposer::class)->findOneBy([
             'garage' => $garage,
-            'prestation' => $prestation
+            'prestation' => $prestation,
         ]);
 
         if (!$proposer) {
             return $this->json([
-                'message' => 'Cette prestation n\'existe pas pour ce garage'
+                'message' => 'Cette prestation n\'existe pas pour ce garage',
             ]);
         }
 
@@ -294,9 +303,7 @@ class PrestationController extends AbstractController
         $manager->flush();
 
         return $this->json([
-            'message' => 'Prestation supprimée du garage'
+            'message' => 'Prestation supprimée du garage',
         ]);
     }
-   
-
 }

@@ -50,21 +50,32 @@ class Garage
     #[ORM\Column(name: 'is_valide', type: 'boolean', options: ['default' => false])]
     private bool $isValide = false;
 
-    #[ORM\ManyToOne(targetEntity: Utilisateur::class)]
+    #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'garages')]
     #[ORM\JoinColumn(name: "id_utilisateur", referencedColumnName: "id_utilisateur", onDelete: "CASCADE")]
     private ?Utilisateur $utilisateur = null;
-
-    #[ORM\ManyToMany(targetEntity: Prestation::class, inversedBy: 'garages')]
-    #[ORM\JoinTable(name: 'proposer')]
-    private Collection $prestations;
 
     #[ORM\OneToMany(mappedBy: 'garage', targetEntity: RendezVous::class)]
     private Collection $rendezVousList;
 
+    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Avis::class)]
+    private Collection $avisList;
+
+    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Proposer::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $proposers;
+
+    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Souscription::class)]
+    private Collection $souscriptions;
+
+    #[ORM\OneToMany(mappedBy: 'garage', targetEntity: Valeur::class)]
+    private Collection $valeurs;
+
     public function __construct()
     {
-        $this->prestations = new ArrayCollection();
         $this->rendezVousList = new ArrayCollection();
+        $this->avisList = new ArrayCollection();
+        $this->proposers = new ArrayCollection();
+        $this->souscriptions = new ArrayCollection();
+        $this->valeurs = new ArrayCollection();
     }
 
     // Getters & Setters
@@ -208,24 +219,64 @@ class Garage
 
     public function getPrestations(): Collection
     {
-        return $this->prestations;
+        $prestations = new ArrayCollection();
+        foreach ($this->proposers as $proposer) {
+            $prestation = $proposer->getPrestation();
+            if (!$prestations->contains($prestation)) {
+                $prestations->add($prestation);
+            }
+        }
+
+        return $prestations;
     }
 
     public function addPrestation(Prestation $prestation): static
     {
-        if (!$this->prestations->contains($prestation)) {
-            $this->prestations->add($prestation);
-            $prestation->addGarage($this);
+        foreach ($this->proposers as $proposer) {
+            if ($proposer->getPrestation() === $prestation) {
+                return $this;
+            }
         }
+
+        $proposer = new Proposer();
+        $proposer->setGarage($this);
+        $proposer->setPrestation($prestation);
+        $this->proposers->add($proposer);
+        $prestation->addProposer($proposer);
+
         return $this;
     }
 
     public function removePrestation(Prestation $prestation): static
     {
-        if ($this->prestations->removeElement($prestation)) {
-            $prestation->removeGarage($this);
+        foreach ($this->proposers as $proposer) {
+            if ($proposer->getPrestation() === $prestation) {
+                $this->proposers->removeElement($proposer);
+                $prestation->removeProposer($proposer);
+            }
         }
+
         return $this;
+    }
+
+    public function getAvisList(): Collection
+    {
+        return $this->avisList;
+    }
+
+    public function getProposers(): Collection
+    {
+        return $this->proposers;
+    }
+
+    public function getSouscriptions(): Collection
+    {
+        return $this->souscriptions;
+    }
+
+    public function getValeurs(): Collection
+    {
+        return $this->valeurs;
     }
 
     public function getRendezVousList(): Collection

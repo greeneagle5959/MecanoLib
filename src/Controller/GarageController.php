@@ -9,6 +9,7 @@ use App\Entity\Historique;
 use App\Entity\Horaire;
 use App\Entity\Jour;
 use App\Entity\Prestation;
+use App\Entity\Proposer;
 use App\Entity\RendezVous;
 use App\Entity\StatusRdv;
 use App\Entity\Vehicule;
@@ -259,13 +260,12 @@ final class GarageController extends AbstractController
     #[Route('/api/v1/planning/semaine', name: 'planning_semaine_update', methods: ['PUT', 'PATCH'])]
     public function mettreAJourPlanningSemaine(Request $request): JsonResponse
     {
-        $payload = $this->recupererPayload($request);
-        $garage = $this->resoudreGarage($request, $payload);
-
+        $garage = $this->resoudreGarage($request);
         if ($garage === null) {
             return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
         }
 
+        $payload = $this->recupererPayload($request);
         $planning = $payload['planning'] ?? null;
         if (!is_array($planning)) {
             return $this->json([
@@ -276,7 +276,7 @@ final class GarageController extends AbstractController
         foreach ($planning as $item) {
             if (!is_array($item) || !isset($item['jourId'])) {
                 return $this->json([
-                    'error' => 'Chaque entree doit avoir jourId'
+                    'error' => 'Chaque entree doit avoir jourId',
                 ], Response::HTTP_BAD_REQUEST);
             }
 
@@ -379,7 +379,7 @@ final class GarageController extends AbstractController
     }
 
 
-    // Ici on ajoute une nouvelle prestation au garage.
+    // Ici on rattache une prestation existante au garage avec son prix.
     #[Route('/api/v1/prestations', name: 'prestations_add', methods: ['POST'])]
     public function ajouterPrestation(Request $request): JsonResponse
     {
@@ -388,36 +388,67 @@ final class GarageController extends AbstractController
         if ($garage === null) {
             return $this->json(['error' => 'Garage introuvable'], Response::HTTP_NOT_FOUND);
         }
-//       on verifie que tous les champs requis sont presents dans le payload.
-        foreach (['nomPrestation', 'descriptionPrestation', 'dureePrestation', 'categoriePrestation', 'categorieId'] as $field) {
-            if (!isset($payload[$field])) {
-                return $this->json(['error' => sprintf('Champ requis: %s', $field)], Response::HTTP_BAD_REQUEST);
-            }
-        }
-//       on verifie que la categorie existe en base avant de creer la prestation.
-        $categorie = $this->entityManager->getRepository(Categorie::class)->find((int) $payload['categorieId']);
-        if ($categorie === null) {
-            return $this->json(['error' => 'Categorie introuvable'], Response::HTTP_BAD_REQUEST);
-        }
-//       on cree la prestation et on l'associe au garage avant de la persister en base.
-        $prestation = new Prestation();
-        $prestation
-            ->setNomPrestation((string) $payload['nomPrestation'])
-            ->setDescriptionPrestation((string) $payload['descriptionPrestation'])
-            ->setDureePrestation((string) $payload['dureePrestation'])
-            ->setCategorie($categorie);
 
-        $garage->addPrestation($prestation);
-        $this->entityManager->persist($prestation);
+        $items = [];
+        if (isset($payload['prestations']) && is_array($payload['prestations'])) {
+            $items = $payload['prestations'];
+        } elseif (isset($payload['prestationId'])) {
+            $items = [$payload];
+        }
+
+        if ($items === []) {
+            return $this->json([
+                'error' => 'Une prestation existante et un prix sont requis',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        $prestationRepo = $this->entityManager->getRepository(Prestation::class);
+        $proposerRepo = $this->entityManager->getRepository(Proposer::class);
+        $updated = 0;
+
+        foreach ($items as $item) {
+            $prestationId = (int) ($item['id'] ?? $item['prestationId'] ?? 0);
+            $prix = $item['prix'] ?? null;
+
+            if ($prestationId <= 0 || $prix === null || $prix === '') {
+                continue;
+            }
+
+            $prestation = $prestationRepo->find($prestationId);
+            if ($prestation === null) {
+                continue;
+            }
+
+            $prixNormalise = number_format((float) $prix, 2, '.', '');
+            $existing = $proposerRepo->findOneBy([
+                'garage' => $garage,
+                'prestation' => $prestation,
+            ]);
+
+            if ($existing instanceof Proposer) {
+                $existing->setPrix($prixNormalise);
+            } else {
+                $proposer = new Proposer();
+                $proposer->setGarage($garage);
+                $proposer->setPrestation($prestation);
+                $proposer->setPrix($prixNormalise);
+                $this->entityManager->persist($proposer);
+            }
+
+            $updated++;
+        }
+
+        if ($updated === 0) {
+            return $this->json([
+                'error' => 'Aucune prestation valide à enregistrer',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         $this->entityManager->flush();
 
         return $this->json([
-            'message' => 'Prestation ajoutee',
-            'prestation' => [
-                'id' => $prestation->getIdPrestation(),
-                'nomPrestation' => $prestation->getNomPrestation(),
-                'categorie' => $prestation->getCategorie()->getNomCategorie(),
-            ],
+            'message' => 'Prestation associee au garage',
+            'updated' => $updated,
         ], Response::HTTP_CREATED);
     }
 
